@@ -1,6 +1,6 @@
 {
 	"name": "Chromium Tab Counter",
-	"version": "1.0.1",
+	"version": "1.0.2",
 	"description": "Count every tab in your Chromium-based browsers.",
 	"manifest_version": 3,
 	"author": "Samuel Gunawan",

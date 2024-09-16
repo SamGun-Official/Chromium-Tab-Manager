@@ -34,7 +34,7 @@ function popupColorThemeHandler(message, sendResponse) {
 function setOpenedPeakTabCount(resetData, sendResponse = undefined) {
 	chrome.storage.local.get(["jsonData"]).then((data) => {
 		if (data.jsonData && !resetData) {
-			jsonData.openedPeakTabCount = data.jsonData.openedPeakTabCount;
+			jsonData = data.jsonData;
 		}
 
 		chrome.tabs.query({}, (tabs) => {
