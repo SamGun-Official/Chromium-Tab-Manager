@@ -1,0 +1,33 @@
+{
+	"name": "Chromium Tab Counter",
+	"version": "1.0.0",
+	"description": "Count every tab in your Chromium-based browsers.",
+	"manifest_version": 3,
+	"author": "Samuel Gunawan",
+	"action": {
+		"default_icon": {
+			"16": "src/images/chromium.png",
+			"24": "src/images/chromium.png",
+			"32": "src/images/chromium.png"
+		},
+		"default_popup": "popup.html",
+		"default_title": "Chromium Tab Counter"
+	},
+	"background": {
+		"service_worker": "src/js/background.js"
+	},
+	"host_permissions": [
+		"http://*/*",
+		"https://*/*"
+	],
+	"icons": {
+		"16": "src/images/chromium.png",
+		"32": "src/images/chromium.png",
+		"48": "src/images/chromium.png",
+		"128": "src/images/chromium.png"
+	},
+	"permissions": [
+		"storage",
+		"tabs"
+	]
+}

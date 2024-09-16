@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en-US">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<meta http-equiv="X-UA-Compatible" content="ie=edge" />
+		<title>Chromium Tab Counter</title>
+		<link rel="stylesheet" type="text/css" href="src/css/build.css" />
+		<link rel="stylesheet" type="text/css" href="src/css/style.css" />
+	</head>
+	<body class="w-[400px] p-5 light-theme" data-theme="light">
+		<div id="wrapper" class="flex flex-col gap-y-5">
+			<h1 class="font-bold text-2xl leading-none">Chromium Tab Counter</h1>
+			<div class="flex flex-col justify-center gap-y-1 text-base">
+				<div id="opened_windows" class="data-row-info">
+					<span>Opened Window Count:</span>
+					<span class="font-bold" data-identifier="1"></span>
+				</div>
+				<div id="opened_tabs" class="data-row-info">
+					<span>Opened Tab Count:</span>
+					<span class="font-bold" data-identifier="2"></span>
+				</div>
+				<div id="current_window_tabs" class="data-row-info">
+					<span>Current Window Tab Count:</span>
+					<span class="font-bold" data-identifier="3"></span>
+				</div>
+				<div id="opened_peak_tabs" class="data-row-info">
+					<span>Highest Peak Tab Count:</span>
+					<span class="font-bold" data-identifier="4"></span>
+					<a href="#" id="reset_peak_count" class="link underline ml-2">Reset</a>
+				</div>
+				<div id="badge_background_color" class="data-row-info">
+					<span>Extension Badge Color:</span>
+					<div class="flex gap-x-1">
+						<span class="color-options button-border bg-[#4285f4]" data-badge-color="blue"></span>
+						<span class="color-options button-border bg-[#ff0f0f]" data-badge-color="red"></span>
+						<span class="color-options button-border bg-[#ffa500]" data-badge-color="orange"></span>
+						<span class="color-options button-border bg-[#e8e800]" data-badge-color="yellow"></span>
+						<span class="color-options button-border bg-[#00d400]" data-badge-color="green"></span>
+						<span class="color-options button-border bg-[#bf00bf]" data-badge-color="purple"></span>
+						<span class="color-options button-border bg-[#ffc0cb]" data-badge-color="pink"></span>
+					</div>
+				</div>
+			</div>
+			<div class="flex items-center justify-between text-base">
+				<a href="https://github.com/SamGun-Official" class="flex items-center gap-x-3 light-theme-anchor" target="_blank">
+					<img src="./src/images/github.png" class="w-10 h-10" alt="GitHub" />
+					<div class="flex flex-col gap-y-0.5 leading-snug">
+						<span class="font-semibold">SamGun-Official</span>
+						<span class="text-xs">(https://github.com/SamGun-Official)</span>
+					</div>
+				</a>
+				<button id="theme_toggle" class="bg-[#89aaf7] w-10 h-10 p-2 rounded-full button-border">
+					<img src="./src/images/brightness.png" alt="Toggle" />
+				</button>
+			</div>
+		</div>
+		<script src="src/js/popup.js"></script>
+	</body>
+</html>
