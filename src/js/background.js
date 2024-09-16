@@ -1,13 +1,13 @@
-const json = {
-	badgeColor: {
-		blue: "#4285f4",
-		red: "#ff0f0f",
-		orange: "#ffa500",
-		yellow: "#e8e800",
-		green: "#00d400",
-		purple: "#bf00bf",
-		pink: "#ffc0cb",
-	},
+const badgeColor = {
+	blue: "#4285f4",
+	red: "#ff0f0f",
+	orange: "#ffa500",
+	yellow: "#e8e800",
+	green: "#00d400",
+	purple: "#bf00bf",
+	pink: "#ffc0cb",
+};
+let jsonData = {
 	savedBadgeColor: "blue",
 	colorTheme: "dark",
 	openedPeakTabCount: 1,
@@ -15,37 +15,36 @@ const json = {
 
 function popupColorThemeHandler(message, sendResponse) {
 	if (message.getColorTheme) {
-		chrome.storage.local.get(["json"]).then((data) => {
-			let retrievedColorTheme = json.colorTheme;
-			if (data.json) {
-				retrievedColorTheme = data.json.colorTheme;
+		chrome.storage.local.get(["jsonData"]).then((data) => {
+			if (data.jsonData) {
+				jsonData = data.jsonData;
 			}
 
-			sendResponse({ colorTheme: retrievedColorTheme });
+			sendResponse({ colorTheme: jsonData.colorTheme });
 		});
 	}
 	if (message.colorTheme) {
-		json.colorTheme = message.colorTheme;
-		chrome.storage.local.set({ json: json }).then(() => {
-			sendResponse({ colorTheme: json.colorTheme });
+		jsonData.colorTheme = message.colorTheme;
+		chrome.storage.local.set({ jsonData: jsonData }).then(() => {
+			sendResponse({ colorTheme: jsonData.colorTheme });
 		});
 	}
 }
 
 function setOpenedPeakTabCount(resetData, sendResponse = undefined) {
-	chrome.storage.local.get(["json"]).then((data) => {
-		if (data.json && !resetData) {
-			json.openedPeakTabCount = data.json.openedPeakTabCount;
+	chrome.storage.local.get(["jsonData"]).then((data) => {
+		if (data.jsonData && !resetData) {
+			jsonData.openedPeakTabCount = data.jsonData.openedPeakTabCount;
 		}
 
 		chrome.tabs.query({}, (tabs) => {
-			if (tabs.length > json.openedPeakTabCount || resetData) {
-				json.openedPeakTabCount = tabs.length;
+			if (tabs.length > jsonData.openedPeakTabCount || resetData) {
+				jsonData.openedPeakTabCount = tabs.length;
 			}
 
-			chrome.storage.local.set({ json: json }).then(() => {
+			chrome.storage.local.set({ jsonData: jsonData }).then(() => {
 				if (sendResponse) {
-					sendResponse({ openedPeakTabCount: json.openedPeakTabCount });
+					sendResponse({ openedPeakTabCount: jsonData.openedPeakTabCount });
 				}
 			});
 		});
@@ -83,21 +82,21 @@ function updateBadgeText() {
 }
 
 function updateBadgeColor() {
-	chrome.storage.local.get(["json"]).then((data) => {
-		if (data.json) {
-			json.savedBadgeColor = data.json.savedBadgeColor;
+	chrome.storage.local.get(["jsonData"]).then((data) => {
+		if (data.jsonData) {
+			jsonData = data.jsonData;
 		}
 
-		chrome.action.setBadgeBackgroundColor({ color: json.badgeColor[json.savedBadgeColor] });
+		chrome.action.setBadgeBackgroundColor({ color: badgeColor[jsonData.savedBadgeColor] });
 	});
 }
 
 function badgeColorHandler(message, sendResponse) {
 	if (message.badgeColor) {
-		json.savedBadgeColor = message.badgeColor;
-		chrome.storage.local.set({ json: json }).then(() => {
+		jsonData.savedBadgeColor = message.badgeColor;
+		chrome.storage.local.set({ jsonData: jsonData }).then(() => {
 			updateBadgeColor();
-			sendResponse({ badgeColor: json.savedBadgeColor });
+			sendResponse({ badgeColor: jsonData.savedBadgeColor });
 		});
 	}
 }
