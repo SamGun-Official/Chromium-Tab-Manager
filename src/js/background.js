@@ -122,5 +122,6 @@ function tabListener() {
 chrome.runtime.onInstalled.addListener(badgeListener);
 chrome.runtime.onMessage.addListener(popupMessageHandler);
 chrome.runtime.onStartup.addListener(badgeListener);
+chrome.tabs.onActivated.addListener(badgeListener);
 chrome.tabs.onCreated.addListener(tabListener);
 chrome.tabs.onRemoved.addListener(tabListener);
