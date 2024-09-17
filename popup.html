@@ -8,9 +8,12 @@
 		<link rel="stylesheet" type="text/css" href="src/css/build.css" />
 		<link rel="stylesheet" type="text/css" href="src/css/style.css" />
 	</head>
-	<body class="w-[400px] p-5 light-theme" data-theme="light">
+	<body class="w-[420px] p-5 dark-theme" data-theme="dark">
 		<div id="wrapper" class="flex flex-col gap-y-5">
-			<h1 class="font-bold text-2xl leading-none">Chromium Tab Counter</h1>
+			<div class="flex items-center justify-between font-bold text-2xl leading-none">
+				<h1 id="extension_title">Chromium Tab Counter</h1>
+				<span id="extension_version">v1.0.0</span>
+			</div>
 			<div class="flex flex-col justify-center gap-y-1 text-base">
 				<div id="opened_windows" class="data-row-info">
 					<span>Opened Window Count:</span>

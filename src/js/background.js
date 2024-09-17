@@ -13,6 +13,18 @@ let jsonData = {
 	openedPeakTabCount: 1,
 };
 
+function getManifestInfo(message, sendResponse) {
+	if (message.getManifestInfo) {
+		const data = chrome.runtime.getManifest();
+		if (data.version) {
+			sendResponse({
+				manifestName: data.name,
+				manifestVersion: data.version,
+			});
+		}
+	}
+}
+
 function popupColorThemeHandler(message, sendResponse) {
 	if (message.getColorTheme) {
 		chrome.storage.local.get(["jsonData"]).then((data) => {
@@ -105,6 +117,7 @@ function popupMessageHandler(message, sender, sendResponse) {
 	popupColorThemeHandler(message, sendResponse);
 	popupDataHandler(message, sendResponse);
 	badgeColorHandler(message, sendResponse);
+	getManifestInfo(message, sendResponse);
 
 	return true;
 }

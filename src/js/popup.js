@@ -45,6 +45,10 @@ function fetchAllData() {
 	chrome.runtime.sendMessage({ requestOpenedPeakTabCount: true }).then((response) => {
 		document.querySelector("#opened_peak_tabs > span[data-identifier='4']").innerHTML = response.openedPeakTabCount;
 	});
+	chrome.runtime.sendMessage({ getManifestInfo: true }).then((response) => {
+		document.getElementById("extension_title").innerHTML = response.manifestName;
+		document.getElementById("extension_version").innerHTML = `v${response.manifestVersion}`;
+	});
 }
 
 function buttonColorOptions(event) {
