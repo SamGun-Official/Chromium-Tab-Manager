@@ -18,15 +18,19 @@
 				<input type="text" class="border-2 border-primary rounded-lg p-2" name="filter_domain" id="filter_domain" placeholder="Filter Opened Tab URL Using Keyword" />
 			</div>
 			<div id="tab_query" class="text-base hidden">
-				<div class="mb-3 font-semibold">Search Found: <span id="search_count">0</span></div>
-				<div id="row_template" class="flex items-center gap-x-3 hidden">
-					<img src="./src/images/github.png" class="icon w-9 h-9" alt="Favicon" />
+				<div class="flex justify-between">
+					<div class="mb-2 font-semibold">Search Found: <span id="search_count">0</span></div>
+					<span class="message font-semibold text-green-500 hidden">URL Copied!</span>
+				</div>
+				<div id="search_not_found" class="hidden">No tab was found.</div>
+				<div id="row_template" class="flex items-center gap-x-3 hidden" data-tabid="-1">
+					<div class="icon default-icon min-w-9 min-h-9"></div>
 					<div class="flex flex-col grow gap-y-1 leading-snug overflow-hidden">
 						<label for="title" class="overflow-info text-xs font-semibold" title="SamGun-Official">SamGun-Official</label>
 						<label for="url" class="overflow-info text-xs" title="https://github.com/SamGun-Official">https://github.com/SamGun-Official</label>
 					</div>
 					<div class="scrollbar-margin">
-						<button class="bg-[#89aaf7] w-9 h-9 p-2 rounded-full button-border" data-tabid="-1">
+						<button class="bg-[--theme-dark] w-9 h-9 p-2 rounded-full button-border">
 							<img src="./src/images/link.png" alt="Link" />
 						</button>
 					</div>
@@ -75,7 +79,7 @@
 							<span class="text-xs">(https://github.com/SamGun-Official)</span>
 						</div>
 					</a>
-					<button id="theme_toggle" class="bg-[#89aaf7] w-10 h-10 p-2 rounded-full button-border">
+					<button id="theme_toggle" class="bg-[--theme-dark] w-10 h-10 p-2 rounded-full button-border">
 						<img src="./src/images/brightness.png" alt="Toggle" />
 					</button>
 				</div>

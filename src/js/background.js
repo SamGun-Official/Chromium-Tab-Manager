@@ -133,10 +133,19 @@ function filterTabsURL(message, sendResponse) {
 	}
 }
 
-function switchToTab(message, sendResponse) {
+function manipulateTabByID(message, sendResponse) {
 	if (message.switchToTab) {
 		chrome.tabs.update(message.tabId, { active: true }, (tab) => {
 			sendResponse({ status: "OK", tabId: tab.id });
+		});
+	}
+	if (message.closeTargetTab) {
+		chrome.tabs.remove(message.tabId, () => {
+			if (chrome.runtime.lastError) {
+				sendResponse({ status: "ERROR" });
+			} else {
+				sendResponse({ status: "OK" });
+			}
 		});
 	}
 }
@@ -147,7 +156,7 @@ function popupMessageHandler(message, sender, sendResponse) {
 	badgeColorHandler(message, sendResponse);
 	getManifestInfo(message, sendResponse);
 	filterTabsURL(message, sendResponse);
-	switchToTab(message, sendResponse);
+	manipulateTabByID(message, sendResponse);
 
 	return true;
 }

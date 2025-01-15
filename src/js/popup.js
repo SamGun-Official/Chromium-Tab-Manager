@@ -1,4 +1,4 @@
-let searchTimer;
+let searchTimer, messageTimer;
 
 function changeColorTheme() {
 	const body = document.querySelector("body");
@@ -66,20 +66,20 @@ function getSavedColorTheme() {
 
 function fetchAllData() {
 	chrome.runtime.sendMessage({ requestOpenedWindowCount: true }).then((response) => {
-		document.querySelector("#opened_windows > span[data-identifier='1']").innerHTML = response.openedWindowCount;
+		document.querySelector("#opened_windows > span[data-identifier='1']").textContent = response.openedWindowCount;
 	});
 	chrome.runtime.sendMessage({ requestOpenedTabCount: true }).then((response) => {
-		document.querySelector("#opened_tabs > span[data-identifier='2']").innerHTML = response.openedTabCount;
+		document.querySelector("#opened_tabs > span[data-identifier='2']").textContent = response.openedTabCount;
 	});
 	chrome.runtime.sendMessage({ requestCurrentWindowTabCount: true }).then((response) => {
-		document.querySelector("#current_window_tabs > span[data-identifier='3']").innerHTML = response.currentWindowTabCount;
+		document.querySelector("#current_window_tabs > span[data-identifier='3']").textContent = response.currentWindowTabCount;
 	});
 	chrome.runtime.sendMessage({ requestOpenedPeakTabCount: true }).then((response) => {
-		document.querySelector("#opened_peak_tabs > span[data-identifier='4']").innerHTML = response.openedPeakTabCount;
+		document.querySelector("#opened_peak_tabs > span[data-identifier='4']").textContent = response.openedPeakTabCount;
 	});
 	chrome.runtime.sendMessage({ getManifestInfo: true }).then((response) => {
-		document.getElementById("extension_title").innerHTML = response.manifestName;
-		document.getElementById("extension_version").innerHTML = `v${response.manifestVersion}`;
+		document.getElementById("extension_title").textContent = response.manifestName;
+		document.getElementById("extension_version").textContent = `v${response.manifestVersion}`;
 	});
 }
 
@@ -96,38 +96,82 @@ function isScrollAvailable(element) {
 	return element.scrollHeight > element.clientHeight;
 }
 
+function isImageUrlValid(url, callback) {
+	const img = new Image();
+	img.onload = () => callback(true);
+	img.onerror = () => callback(false);
+	img.src = url;
+}
+
 function queryOpenedTabs(keyword) {
 	chrome.runtime.sendMessage({ queryTabs: true, keyword: keyword }).then((response) => {
 		if (response.status === "OK") {
 			const data = response.data;
-			document.getElementById("search_count").innerHTML = data.length;
-			data.forEach((object, index) => {
-				const rowTemplate = document.getElementById("row_template");
-				const rowClone = rowTemplate.cloneNode(true);
-				rowClone.removeAttribute("id");
-				rowClone.classList.remove("hidden");
-				rowClone.querySelector("img.icon").setAttribute("src", object.favIconUrl);
+			document.getElementById("search_count").textContent = data.length;
+			if (data.length <= 0) {
+				document.getElementById("search_not_found").classList.remove("hidden");
+			} else {
+				document.getElementById("search_not_found").classList.add("hidden");
+				data.forEach((object) => {
+					const rowTemplate = document.getElementById("row_template");
+					const rowClone = rowTemplate.cloneNode(true);
+					rowClone.removeAttribute("id");
+					rowClone.setAttribute("data-tabid", object.id);
+					rowClone.classList.remove("hidden");
 
-				const linkButton = rowClone.querySelector("button");
-				linkButton.setAttribute("data-tabid", object.id);
-				linkButton.addEventListener("click", function () {
-					const tabId = parseInt(this.getAttribute("data-tabid"), 10);
-					chrome.runtime.sendMessage({ switchToTab: true, tabId: tabId }).then((response) => {
-						if (response.status === "OK") {
-							console.info(`Tab switched to ${response.tabId}!`);
+					const tabIcon = rowClone.querySelector("div.icon");
+					const faviconURL = object.favIconUrl;
+					tabIcon.style.backgroundImage = `url(${faviconURL})`;
+					tabIcon.addEventListener("click", function () {
+						const parentElement = this.closest("div[data-tabid]");
+						const tabId = parseInt(parentElement.getAttribute("data-tabid"), 10);
+						chrome.runtime.sendMessage({ closeTargetTab: true, tabId: tabId }).then((response) => {
+							if (response.status === "OK") {
+								console.info(`Tab ${tabId} was closed successfully!`);
+							} else {
+								console.error(`Failed to close tab ${tabId}!`);
+							}
+						});
+						parentElement.remove();
+						document.getElementById("search_count").textContent = document.getElementById("tab_list").children.length;
+					});
+					isImageUrlValid(faviconURL, (isValid) => {
+						if (isValid) {
+							tabIcon.classList.remove("default-icon");
 						}
 					});
+
+					const linkButton = rowClone.querySelector("button");
+					linkButton.addEventListener("click", function () {
+						const parentElement = this.closest("div[data-tabid]");
+						const tabId = parseInt(parentElement.getAttribute("data-tabid"), 10);
+						chrome.runtime.sendMessage({ switchToTab: true, tabId: tabId }).then((response) => {
+							if (response.status === "OK") {
+								console.info(`Tab switched to ${response.tabId}!`);
+							}
+						});
+					});
+
+					const titleLabel = rowClone.querySelector("label[for='title']");
+					titleLabel.textContent = object.title;
+					titleLabel.setAttribute("title", object.title);
+
+					const urlLabel = rowClone.querySelector("label[for='url']");
+					urlLabel.textContent = object.url;
+					urlLabel.setAttribute("title", object.url);
+					urlLabel.addEventListener("click", function () {
+						const message = document.querySelector(".message");
+						navigator.clipboard.writeText(this.textContent);
+						message.classList.remove("hidden");
+						clearTimeout(messageTimer);
+						messageTimer = setTimeout(() => {
+							message.classList.add("hidden");
+						}, 1000);
+					});
+
+					document.getElementById("tab_list").appendChild(rowClone);
 				});
-
-				const titleLabel = rowClone.querySelector("label[for='title']");
-				titleLabel.innerHTML = object.title;
-				titleLabel.setAttribute("title", object.title);
-
-				const urlLabel = rowClone.querySelector("label[for='url']");
-				urlLabel.innerHTML = object.url;
-				urlLabel.setAttribute("title", object.url);
-				document.getElementById("tab_list").appendChild(rowClone);
-			});
+			}
 
 			const tabList = document.getElementById("tab_list");
 			if (isScrollAvailable(tabList)) {
@@ -162,7 +206,7 @@ document.addEventListener("DOMContentLoaded", () => {
 	document.getElementById("reset_peak_count").addEventListener("click", (event) => {
 		event.preventDefault();
 		chrome.runtime.sendMessage({ resetOpenedPeakTabCount: true }).then((response) => {
-			document.querySelector("#opened_peak_tabs > span[data-identifier='4']").innerHTML = response.openedPeakTabCount;
+			document.querySelector("#opened_peak_tabs > span[data-identifier='4']").textContent = response.openedPeakTabCount;
 		});
 	});
 	document.querySelectorAll(".color-options").forEach((button) => {
