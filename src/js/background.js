@@ -150,6 +150,25 @@ function manipulateTabByID(message, sendResponse) {
 	}
 }
 
+function replaceTargetedDomain(message, sendResponse) {
+	if (message.replaceDomain) {
+		chrome.tabs.query({}, (tabs) => {
+			tabs.forEach((tab) => {
+				try {
+					const url = new URL(tab.url);
+					if (url.hostname.toLowerCase() === message.targetDomain.toLowerCase()) {
+						const newURL = url.href.replace(message.targetDomain.toLowerCase(), message.newDomain.toLowerCase());
+						chrome.tabs.update(tab.id, { url: newURL });
+					}
+				} catch (e) {
+					console.error(`Failed to update tab: ${e}`);
+				}
+			});
+		});
+		sendResponse({ status: "OK" });
+	}
+}
+
 function popupMessageHandler(message, sender, sendResponse) {
 	popupColorThemeHandler(message, sendResponse);
 	popupDataHandler(message, sendResponse);
@@ -157,6 +176,7 @@ function popupMessageHandler(message, sender, sendResponse) {
 	getManifestInfo(message, sendResponse);
 	filterTabsURL(message, sendResponse);
 	manipulateTabByID(message, sendResponse);
+	replaceTargetedDomain(message, sendResponse);
 
 	return true;
 }

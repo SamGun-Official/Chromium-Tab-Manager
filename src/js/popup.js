@@ -1,5 +1,18 @@
 let searchTimer, messageTimer;
 
+function createFilename() {
+	const now = new Date();
+	const year = now.getFullYear();
+	const month = String(now.getMonth() + 1).padStart(2, "0");
+	const day = String(now.getDate()).padStart(2, "0");
+	const hours = String(now.getHours()).padStart(2, "0");
+	const minutes = String(now.getMinutes()).padStart(2, "0");
+	const seconds = String(now.getSeconds()).padStart(2, "0");
+	const timestamp = `${year}-${month}-${day} ${hours}-${minutes}-${seconds}`;
+
+	return timestamp;
+}
+
 function changeColorTheme() {
 	const body = document.querySelector("body");
 	if (body.dataset.theme === "dark") {
@@ -96,11 +109,20 @@ function isScrollAvailable(element) {
 	return element.scrollHeight > element.clientHeight;
 }
 
-function isImageUrlValid(url, callback) {
+function isImageURLValid(url, callback) {
 	const img = new Image();
 	img.onload = () => callback(true);
 	img.onerror = () => callback(false);
 	img.src = url;
+}
+
+function checkTabList() {
+	const tabList = document.getElementById("tab_list");
+	if (tabList.children.length > 0) {
+		return;
+	}
+
+	document.getElementById("search_not_found").classList.remove("hidden");
 }
 
 function queryOpenedTabs(keyword) {
@@ -134,8 +156,9 @@ function queryOpenedTabs(keyword) {
 						});
 						parentElement.remove();
 						document.getElementById("search_count").textContent = document.getElementById("tab_list").children.length;
+						checkTabList();
 					});
-					isImageUrlValid(faviconURL, (isValid) => {
+					isImageURLValid(faviconURL, (isValid) => {
 						if (isValid) {
 							tabIcon.classList.remove("default-icon");
 						}
@@ -187,16 +210,19 @@ document.addEventListener("DOMContentLoaded", () => {
 	getSavedColorTheme();
 	fetchAllData();
 
+	document.getElementById("close_modal").addEventListener("click", () => {
+		document.getElementById("overlay").classList.add("hidden");
+	});
 	document.getElementById("filter_domain").addEventListener("input", (event) => {
 		clearTimeout(searchTimer);
 		searchTimer = setTimeout(() => {
 			const keyword = event.target.value;
 			document.getElementById("tab_list").innerHTML = "";
-			if (keyword.length > 0) {
+			if (keyword.length > 0 || keyword.toLowerCase() === "<all>") {
 				document.getElementById("tab_query").classList.remove("hidden");
 				document.getElementById("tab_counter").classList.add("hidden");
 
-				queryOpenedTabs(keyword);
+				queryOpenedTabs(keyword.toLowerCase() === "<all>" ? "" : keyword);
 			} else {
 				document.getElementById("tab_query").classList.add("hidden");
 				document.getElementById("tab_counter").classList.remove("hidden");
@@ -220,5 +246,90 @@ document.addEventListener("DOMContentLoaded", () => {
 		chrome.runtime.sendMessage({ colorTheme: body.dataset.theme }).then((response) => {
 			console.info(`Popup window switched to ${response.colorTheme} theme!`);
 		});
+	});
+	document.getElementById("close_all_tab").addEventListener("click", (event) => {
+		event.preventDefault();
+		document.getElementById("overlay").classList.remove("hidden");
+
+		const popupContent = `
+			<div class="flex flex-col gap-y-8 text-center text-xl">
+				<span>Are you sure you want to close all listed tabs?</span>
+				<div class="flex gap-x-3">
+					<button id="keep_list" class="bg-[--c2] flex-1 text-[--sc] px-2 py-1 rounded-full button-border">No</button>
+					<button id="remove_all" class="bg-[--c5] flex-1 text-[--sc] px-2 py-1 rounded-full button-border">Yes</button>
+				</div>
+			</div>`;
+		document.getElementById("popup_content").innerHTML = popupContent;
+
+		const btnAccept = document.getElementById("remove_all");
+		btnAccept.addEventListener("click", () => {
+			const listedTab = document.getElementById("tab_list").children;
+			const tabIds = [];
+			for (let tab of listedTab) {
+				tabIds.push(parseInt(tab.getAttribute("data-tabid"), 10));
+			}
+
+			document.getElementById("tab_list").innerHTML = "";
+			document.getElementById("search_count").textContent = document.getElementById("tab_list").children.length;
+			chrome.tabs.remove(tabIds);
+			checkTabList();
+			document.getElementById("close_modal").click();
+		});
+
+		const btnReject = document.getElementById("keep_list");
+		btnReject.addEventListener("click", () => {
+			document.getElementById("close_modal").click();
+		});
+	});
+	document.getElementById("bulk_edit_domain").addEventListener("click", (event) => {
+		event.preventDefault();
+		document.getElementById("overlay").classList.remove("hidden");
+
+		const popupContent = `
+			<div class="w-full flex flex-col gap-y-4 text-base">
+				<div class="flex flex-col gap-y-2">
+					<label for="target_old">Target Domain (Old):</label>
+					<input type="text" class="border-2 border-primary rounded-lg p-2" name="target_old" id="target_old" placeholder="google.co.jp" />
+				</div>
+				<div class="flex flex-col gap-y-2">
+					<label for="target_new">Target Domain (New):</label>
+					<input type="text" class="border-2 border-primary rounded-lg p-2" name="target_new" id="target_new" placeholder="google.com" />
+				</div>
+				<button id="replace_domain" class="bg-[--c5] flex-1 text-[--sc] px-2 py-1 rounded-full button-border">Replace Target Domain</button>
+			</div>`;
+		document.getElementById("popup_content").innerHTML = popupContent;
+
+		const btnReplace = document.getElementById("replace_domain");
+		btnReplace.addEventListener("click", () => {
+			const targetDomain = document.getElementById("target_old").value;
+			const newDomain = document.getElementById("target_new").value;
+			chrome.runtime.sendMessage({ replaceDomain: true, targetDomain: targetDomain, newDomain: newDomain }).then((response) => {
+				if (response.status === "OK") {
+					document.getElementById("tab_list").innerHTML = "";
+					queryOpenedTabs(newDomain);
+				}
+			});
+			document.getElementById("close_modal").click();
+		});
+	});
+	document.getElementById("download_json").addEventListener("click", (event) => {
+		event.preventDefault();
+
+		const listedTab = document.getElementById("tab_list").children;
+		const newData = [];
+		for (let tab of listedTab) {
+			newData.push({
+				tabId: parseInt(tab.getAttribute("data-tabid"), 10),
+				title: tab.querySelector("label[for='title']").textContent,
+				url: tab.querySelector("label[for='url']").textContent,
+			});
+		}
+
+		const jsonString = JSON.stringify(newData, null, 2);
+		const tempLink = document.createElement("a");
+		const file = new Blob([jsonString], { type: "text/json" });
+		tempLink.href = URL.createObjectURL(file);
+		tempLink.download = `[EXT-CTM] ${createFilename()}.json`;
+		tempLink.click();
 	});
 });

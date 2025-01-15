@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en-US">
+<html lang="en-US" class="min-h-96">
 	<head>
 		<meta charset="UTF-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -10,6 +10,14 @@
 	</head>
 	<body class="w-[420px] p-5 dark-theme" data-theme="dark">
 		<div id="wrapper" class="flex flex-col gap-y-5">
+			<div id="overlay" class="flex items-center justify-center p-8 hidden">
+				<div class="max-w-80 w-full max-h-80 h-full flex items-center justify-center p-8 rounded-lg bg-[--pc] relative">
+					<button id="close_modal" class="absolute top-4 right-4">
+						<img src="./src/images/close.png" class="w-6 h-6" alt="Close" />
+					</button>
+					<div id="popup_content" class="grow font-semibold text-[--sc]"></div>
+				</div>
+			</div>
 			<div class="flex items-center justify-between font-bold text-2xl leading-none">
 				<h1 id="extension_title">Chromium Tab Manager</h1>
 				<span id="extension_version">v1.0.0</span>
@@ -19,8 +27,13 @@
 			</div>
 			<div id="tab_query" class="text-base hidden">
 				<div class="flex justify-between">
-					<div class="mb-2 font-semibold">Search Found: <span id="search_count">0</span></div>
+					<div class="mb-3 font-semibold">Search Found: <span id="search_count">0</span></div>
 					<span class="message font-semibold text-green-500 hidden">URL Copied!</span>
+				</div>
+				<div class="flex gap-x-3 font-semibold text-sm mb-3.5">
+					<button id="close_all_tab" class="bg-[--c2] flex-1 text-[--sc] px-2 py-1 rounded-full button-border">Close All</button>
+					<button id="bulk_edit_domain" class="bg-[--c3] flex-1 text-[--sc] px-2 py-1 rounded-full button-border">Bulk Edit</button>
+					<button id="download_json" class="bg-[--c5] flex-1 text-[--sc] px-2 py-1 rounded-full button-border">Save JSON</button>
 				</div>
 				<div id="search_not_found" class="hidden">No tab was found.</div>
 				<div id="row_template" class="flex items-center gap-x-3 hidden" data-tabid="-1">
@@ -35,7 +48,7 @@
 						</button>
 					</div>
 				</div>
-				<div id="tab_list" class="max-h-[420px] flex flex-col gap-y-3 overflow-x-hidden overflow-y-auto"></div>
+				<div id="tab_list" class="max-h-[372px] flex flex-col gap-y-3 overflow-x-hidden overflow-y-auto"></div>
 			</div>
 			<div id="tab_counter" class="flex flex-col gap-y-5">
 				<div class="divider"></div>
