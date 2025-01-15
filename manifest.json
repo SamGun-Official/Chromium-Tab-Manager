@@ -1,6 +1,6 @@
 {
-	"name": "Chromium Tab Counter",
-	"version": "1.0.4",
+	"name": "Chromium Tab Manager",
+	"version": "1.0.5",
 	"description": "Count every tab in your Chromium-based browsers.",
 	"manifest_version": 3,
 	"author": "Samuel Gunawan",
@@ -11,7 +11,7 @@
 			"32": "src/images/chromium.png"
 		},
 		"default_popup": "popup.html",
-		"default_title": "Chromium Tab Counter"
+		"default_title": "Chromium Tab Manager"
 	},
 	"background": {
 		"service_worker": "src/js/background.js"

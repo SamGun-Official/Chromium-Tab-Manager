@@ -1,6 +1,6 @@
 <div align="center">
-  <img src="https://github.com/SamGun-Official/Chromium-Tab-Counter/blob/main/src/images/chromium.png" alt="ChromiumTabCounterLogo" width="128" height="128">
-  <h1 align="center">Chromium Tab Counter</h1>
+  <img src="https://github.com/SamGun-Official/Chromium Tab Manager/blob/main/src/images/chromium.png" alt="ChromiumTabCounterLogo" width="128" height="128">
+  <h1 align="center">Chromium Tab Manager</h1>
 </div>
 A simple extension that was made to count every opened tab while running Chromium-based browser. This way, when you have huge number of tabs opened at the same time, you could note it down and that will help you to reduce as much tabs as possible.
 
