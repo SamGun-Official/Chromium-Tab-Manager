@@ -1,12 +1,61 @@
 @charset "UTF-8";
 
+/* ===== Scrollbar Styles ===== */
+/* Firefox */
+* {
+	scrollbar-width: auto;
+	scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
+}
+
+/* Chrome, Edge, and Safari */
+*::-webkit-scrollbar {
+	width: 16px;
+}
+
+*::-webkit-scrollbar-track {
+	background: var(--scrollbar-track);
+}
+
+*::-webkit-scrollbar-thumb {
+	background-color: var(--scrollbar-thumb);
+	border-radius: 10px;
+	border: 3px solid #ffffff;
+}
+
+/* ===== Default Styles ===== */
 :root {
+	--scrollbar-thumb: var(--pc);
+	--scrollbar-track: var(--sc);
+	--scrollbar-margin: 0;
 	--pc: #e0e0e0;
 	--sc: #1b1b23;
+	--c1: #4285f4;
+	--c2: #ff0f0f;
+	--c3: #ffa500;
+	--c4: #e8e800;
+	--c5: #00d400;
+	--c6: #bf00bf;
+	--c7: #ffc0cb;
 }
 
 * {
 	font-family: "Roboto", sans-serif;
+}
+
+/* ===== Custom Styles ===== */
+html,
+body {
+	max-height: 600px;
+}
+
+input {
+	color: var(--sc);
+}
+
+.divider {
+	background-color: var(--pc);
+	width: 100%;
+	height: 2px;
 }
 
 .dark-theme {
@@ -44,4 +93,14 @@
 .color-options {
 	width: 1.25rem;
 	height: 1.25rem;
+}
+
+.overflow-info {
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+.scrollbar-margin {
+	margin-right: var(--scrollbar-margin);
 }

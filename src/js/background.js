@@ -113,11 +113,41 @@ function badgeColorHandler(message, sendResponse) {
 	}
 }
 
+function filterTabsURL(message, sendResponse) {
+	if (message.queryTabs) {
+		const keyword = message.keyword;
+		chrome.tabs.query({}, (tabs) => {
+			const filteredTabs = tabs.filter((tab) => {
+				let isMatched = false;
+				if (tab.url.toLowerCase().includes(keyword.toLowerCase())) {
+					isMatched = true;
+				}
+				if (tab.title.toLowerCase().includes(keyword.toLowerCase())) {
+					isMatched = true;
+				}
+
+				return isMatched;
+			});
+			sendResponse({ status: "OK", data: filteredTabs });
+		});
+	}
+}
+
+function switchToTab(message, sendResponse) {
+	if (message.switchToTab) {
+		chrome.tabs.update(message.tabId, { active: true }, (tab) => {
+			sendResponse({ status: "OK", tabId: tab.id });
+		});
+	}
+}
+
 function popupMessageHandler(message, sender, sendResponse) {
 	popupColorThemeHandler(message, sendResponse);
 	popupDataHandler(message, sendResponse);
 	badgeColorHandler(message, sendResponse);
 	getManifestInfo(message, sendResponse);
+	filterTabsURL(message, sendResponse);
+	switchToTab(message, sendResponse);
 
 	return true;
 }
