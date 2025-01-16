@@ -1,6 +1,6 @@
 {
 	"name": "Chromium Tab Manager",
-	"version": "1.0.8",
+	"version": "1.0.9",
 	"description": "Count every tab in your Chromium-based browsers.",
 	"manifest_version": 3,
 	"author": "Samuel Gunawan",

@@ -134,6 +134,7 @@ function queryOpenedTabs(keyword) {
 				document.getElementById("search_not_found").classList.remove("hidden");
 			} else {
 				document.getElementById("search_not_found").classList.add("hidden");
+				document.getElementById("extra_btn").classList.remove("hidden");
 				data.forEach((object) => {
 					const rowTemplate = document.getElementById("row_template");
 					const rowClone = rowTemplate.cloneNode(true);

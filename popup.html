@@ -30,7 +30,7 @@
 					<div class="mb-3 font-semibold">Search Found: <span id="search_count">0</span></div>
 					<span class="message font-semibold text-green-500 hidden">URL Copied!</span>
 				</div>
-				<div class="flex gap-x-3 font-semibold text-sm mb-3.5">
+				<div id="extra_btn" class="flex gap-x-3 font-semibold text-sm mb-3.5 hidden">
 					<button id="close_all_tab" class="bg-[--c2] flex-1 text-[--sc] px-2 py-1 rounded-full button-border">Close All</button>
 					<button id="bulk_edit_domain" class="bg-[--c3] flex-1 text-[--sc] px-2 py-1 rounded-full button-border">Bulk Edit</button>
 					<button id="download_json" class="bg-[--c5] flex-1 text-[--sc] px-2 py-1 rounded-full button-border">Save JSON</button>
@@ -86,13 +86,13 @@
 				<div class="divider"></div>
 				<div class="flex items-center justify-between text-base">
 					<a href="https://github.com/SamGun-Official" class="flex items-center gap-x-3 light-theme-anchor" target="_blank">
-						<img src="./src/images/github.png" class="w-10 h-10" alt="GitHub" />
-						<div class="flex flex-col gap-y-0.5 leading-snug">
-							<span class="font-semibold">SamGun-Official</span>
+						<img src="./src/images/github.png" class="w-9 h-9" alt="GitHub" />
+						<div class="flex flex-col leading-snug">
+							<span class="text-sm font-semibold">SamGun-Official</span>
 							<span class="text-xs">(https://github.com/SamGun-Official)</span>
 						</div>
 					</a>
-					<button id="theme_toggle" class="bg-[--theme-dark] w-10 h-10 p-2 rounded-full button-border">
+					<button id="theme_toggle" class="bg-[--theme-dark] w-9 h-9 p-2 rounded-full button-border">
 						<img src="./src/images/brightness.png" alt="Toggle" />
 					</button>
 				</div>
