@@ -132,6 +132,7 @@ function queryOpenedTabs(keyword) {
 			document.getElementById("search_count").textContent = data.length;
 			if (data.length <= 0) {
 				document.getElementById("search_not_found").classList.remove("hidden");
+				document.getElementById("extra_btn").classList.add("hidden");
 			} else {
 				document.getElementById("search_not_found").classList.add("hidden");
 				document.getElementById("extra_btn").classList.remove("hidden");
