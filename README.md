@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="https://github.com/SamGun-Official/Chromium-Tab-Manager/blob/main/src/images/chromium.png" alt="ChromiumTabCounterLogo" width="128" height="128">
+  <img src="https://github.com/SamGun-Official/Chromium-Tab-Manager/blob/main/src/images/chromium.png" alt="ExtensionLogo" width="128" height="128">
   <h1 align="center">Chromium Tab Manager</h1>
 </div>
 A simple extension that was made to manage every opened tab while running Chromium-based browser. This way, when you have huge number of tabs opened at the same time, you could note it down, manage them, and that will help you to modify/reduce as much tabs as possible.
@@ -13,8 +13,8 @@ Here's the instructions on how you can use the extension:
 5. You should see **Load unpacked** button. Click the button and select root directory of this extension.
 
 ## EXTENSION SNAPSHOTS
-These are the looks of the extension in dark and light mode:<br><br>
-![image](https://github.com/user-attachments/assets/2ea624c5-15bc-472a-9dc1-5f9ee5fcc85b)&nbsp;&nbsp;&nbsp;&nbsp;![image](https://github.com/user-attachments/assets/4dbb4493-ea46-4fe9-98db-43c4b2d0ca3b)
+These stats shows how many tabs you've opened so far:<br><br>
+![image](https://github.com/user-attachments/assets/2ea624c5-15bc-472a-9dc1-5f9ee5fcc85b)
 
 And this is the filter tab feature:<br><br>
 ![image](https://github.com/user-attachments/assets/d4146d6e-2b88-4ccb-bddc-2bf71ee9f0b7)
