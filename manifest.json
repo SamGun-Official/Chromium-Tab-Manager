@@ -3,7 +3,7 @@
 	"version": "1.0.10",
 	"description": "Counts all open tabs across Chromium-based browsers.",
 	"manifest_version": 3,
-	"author": "Samuel Gunawan",
+	"author": "SamGun-Official",
 	"action": {
 		"default_icon": {
 			"16": "src/images/chromium.png",
