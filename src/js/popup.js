@@ -215,6 +215,7 @@ document.addEventListener("DOMContentLoaded", () => {
 	document.getElementById("close_modal").addEventListener("click", () => {
 		document.getElementById("overlay").classList.add("hidden");
 	});
+	document.getElementById("filter_domain").focus();
 	document.getElementById("filter_domain").addEventListener("input", (event) => {
 		clearTimeout(searchTimer);
 		searchTimer = setTimeout(() => {
