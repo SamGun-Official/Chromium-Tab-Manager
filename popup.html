@@ -26,8 +26,8 @@
 				<input type="text" class="border-2 border-primary rounded-lg p-2" name="filter_domain" id="filter_domain" placeholder="Filter Opened Tab URL Using Keyword" />
 			</div>
 			<div id="tab_query" class="text-base hidden">
-				<div class="flex justify-between">
-					<div class="mb-3 font-semibold">Search Found: <span id="search_count">0</span></div>
+				<div class="flex justify-between mb-3">
+					<div class="font-semibold">Search Found: <span id="search_count">0</span></div>
 					<span class="message font-semibold text-green-500 hidden">URL Copied!</span>
 				</div>
 				<div id="extra_btn" class="flex gap-x-3 font-semibold text-sm mb-3.5 hidden">
@@ -36,16 +36,21 @@
 					<button id="download_json" class="bg-[--c5] flex-1 text-[--sc] px-2 py-1 rounded-full button-border">Save JSON</button>
 				</div>
 				<div id="search_not_found" class="hidden">No tab was found.</div>
-				<div id="row_template" class="flex items-center gap-x-3 hidden" data-tabid="-1">
+				<div id="row_template" class="flex items-center hidden" data-tabid="-1">
 					<div class="icon default-icon min-w-9 min-h-9"></div>
-					<div class="flex flex-col grow gap-y-1 leading-snug overflow-hidden">
-						<label for="title" class="overflow-info text-xs font-semibold" title="SamGun-Official">SamGun-Official</label>
-						<label for="url" class="overflow-info text-xs" title="https://github.com/SamGun-Official">https://github.com/SamGun-Official</label>
-					</div>
-					<div class="scrollbar-margin">
-						<button class="bg-[--theme-dark] w-9 h-9 p-2 rounded-full button-border">
-							<img src="./src/images/link.png" alt="Link" />
-						</button>
+					<div class="flex flex-col grow gap-y-1 mx-3 leading-snug overflow-hidden">
+						<div class="info-title flex items-center gap-x-2">
+							<button class="btn-volume w-3 h-3 shrink-0 hidden color-inverter" title="Click to mute/unmute tab">
+								<img src="./src/images/volume_unmuted.png" alt="Volume" />
+							</button>
+							<label for="title" class="overflow-info text-xs font-semibold" title="SamGun-Official">SamGun-Official</label>
+						</div>
+						<div class="info-url flex items-center justify-between gap-x-2">
+							<label for="url" class="overflow-info text-xs" title="https://github.com/SamGun-Official">https://github.com/SamGun-Official</label>
+							<button class="btn-link w-3 h-3 shrink-0" title="Switch to this tab">
+								<img src="./src/images/link.png" class="color-inverter" alt="Link" />
+							</button>
+						</div>
 					</div>
 				</div>
 				<div id="tab_list" class="max-h-[372px] flex flex-col gap-y-3 overflow-x-hidden overflow-y-auto"></div>

@@ -134,3 +134,15 @@ input {
 	background-image: url("../images/close.png") !important;
 	background-size: 75%;
 }
+
+.btn-volume {
+	background-image: url("../images/volume_unmuted.png") !important;
+}
+
+.btn-volume.volume-muted {
+	background-image: url("../images/volume_muted.png") !important;
+}
+
+body[data-theme="dark"] .color-inverter {
+	filter: invert(100%);
+}

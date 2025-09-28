@@ -125,6 +125,18 @@ function checkTabList() {
 	document.getElementById("search_not_found").classList.remove("hidden");
 }
 
+function showMesssage(status, success = true) {
+	const message = document.querySelector(".message");
+	message.textContent = status;
+	message.classList.remove("text-green-500", "text-red-500");
+	message.classList.add(success ? "text-green-500" : "text-red-500");
+	message.classList.remove("hidden");
+	clearTimeout(messageTimer);
+	messageTimer = setTimeout(() => {
+		message.classList.add("hidden");
+	}, 1000);
+}
+
 function queryOpenedTabs(keyword) {
 	chrome.runtime.sendMessage({ queryTabs: true, keyword: keyword }).then((response) => {
 		if (response.status === "OK") {
@@ -134,8 +146,6 @@ function queryOpenedTabs(keyword) {
 				document.getElementById("search_not_found").classList.remove("hidden");
 				document.getElementById("extra_btn").classList.add("hidden");
 			} else {
-				document.getElementById("search_not_found").classList.add("hidden");
-				document.getElementById("extra_btn").classList.remove("hidden");
 				data.forEach((object) => {
 					const rowTemplate = document.getElementById("row_template");
 					const rowClone = rowTemplate.cloneNode(true);
@@ -166,7 +176,7 @@ function queryOpenedTabs(keyword) {
 						}
 					});
 
-					const linkButton = rowClone.querySelector("button");
+					const linkButton = rowClone.querySelector("button.btn-link");
 					linkButton.addEventListener("click", function () {
 						const parentElement = this.closest("div[data-tabid]");
 						const tabId = parseInt(parentElement.getAttribute("data-tabid"), 10);
@@ -181,21 +191,41 @@ function queryOpenedTabs(keyword) {
 					titleLabel.textContent = object.title;
 					titleLabel.setAttribute("title", object.title);
 
+					const volumeButton = rowClone.querySelector("button.btn-volume");
+					volumeButton.addEventListener("click", function () {
+						const parentElement = this.closest("div[data-tabid]");
+						const tabId = parseInt(parentElement.getAttribute("data-tabid"), 10);
+						chrome.runtime.sendMessage({ muteTab: true, tabId: tabId }).then((response) => {
+							if (response.status === "OK") {
+								const isMuted = response.isMuted;
+								const volumeIcon = volumeButton.querySelector("img");
+								volumeIcon.src = isMuted ? "./src/images/volume_muted.png" : "./src/images/volume_unmuted.png";
+								showMesssage(isMuted ? "Tab Muted!" : "Tab Unmuted!", true);
+								console.info(`Tab ${tabId} was muted successfully!`);
+							} else {
+								console.error(`Failed to mute tab ${tabId}!`);
+							}
+						});
+					});
+					if (object.audible) {
+						const isMuted = object.mutedInfo.muted;
+						const volumeIcon = volumeButton.querySelector("img");
+						volumeIcon.src = isMuted ? "./src/images/volume_muted.png" : "./src/images/volume_unmuted.png";
+						volumeButton.classList.remove("hidden");
+					}
+
 					const urlLabel = rowClone.querySelector("label[for='url']");
 					urlLabel.textContent = object.url;
 					urlLabel.setAttribute("title", object.url);
 					urlLabel.addEventListener("click", function () {
-						const message = document.querySelector(".message");
 						navigator.clipboard.writeText(this.textContent);
-						message.classList.remove("hidden");
-						clearTimeout(messageTimer);
-						messageTimer = setTimeout(() => {
-							message.classList.add("hidden");
-						}, 1000);
+						showMesssage("URL Copied!");
 					});
 
 					document.getElementById("tab_list").appendChild(rowClone);
 				});
+				document.getElementById("search_not_found").classList.add("hidden");
+				document.getElementById("extra_btn").classList.remove("hidden");
 			}
 
 			const tabList = document.getElementById("tab_list");
@@ -221,14 +251,22 @@ document.addEventListener("DOMContentLoaded", () => {
 		searchTimer = setTimeout(() => {
 			const keyword = event.target.value;
 			document.getElementById("tab_list").innerHTML = "";
-			if (keyword.length > 0 || keyword.toLowerCase() === "<all>") {
+			if (keyword.length > 0) {
+				if (keyword.toLowerCase() === "<all>") {
+					queryOpenedTabs("<all>");
+				} else if (keyword.toLowerCase() === "<sound>") {
+					queryOpenedTabs("<sound>");
+				} else {
+					queryOpenedTabs(keyword);
+				}
+
 				document.getElementById("tab_query").classList.remove("hidden");
 				document.getElementById("tab_counter").classList.add("hidden");
-
-				queryOpenedTabs(keyword.toLowerCase() === "<all>" ? "" : keyword);
 			} else {
 				document.getElementById("tab_query").classList.add("hidden");
 				document.getElementById("tab_counter").classList.remove("hidden");
+				document.getElementById("search_not_found").classList.remove("hidden");
+				document.getElementById("extra_btn").classList.add("hidden");
 			}
 		}, 1000);
 	});

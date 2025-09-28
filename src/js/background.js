@@ -115,8 +115,16 @@ function badgeColorHandler(message, sendResponse) {
 
 function filterTabsURL(message, sendResponse) {
 	if (message.queryTabs) {
-		const keyword = message.keyword;
-		chrome.tabs.query({}, (tabs) => {
+		let args = {};
+		let keyword = message.keyword;
+		if (keyword.toLowerCase() === "<all>") {
+			keyword = "";
+		} else if (keyword.toLowerCase() === "<sound>") {
+			keyword = "";
+			args["audible"] = true;
+		}
+
+		chrome.tabs.query(args, (tabs) => {
 			const filteredTabs = tabs.filter((tab) => {
 				let isMatched = false;
 				if (tab.url.toLowerCase().includes(keyword.toLowerCase())) {
@@ -145,6 +153,18 @@ function manipulateTabByID(message, sendResponse) {
 				sendResponse({ status: "ERROR" });
 			} else {
 				sendResponse({ status: "OK" });
+			}
+		});
+	}
+	if (message.muteTab) {
+		chrome.tabs.get(message.tabId, (tab) => {
+			if (chrome.runtime.lastError) {
+				sendResponse({ status: "ERROR" });
+			} else {
+				const isMuted = tab.mutedInfo.muted;
+				const newAudioState = !isMuted;
+				chrome.tabs.update(tab.id, { muted: newAudioState });
+				sendResponse({ status: "OK", tabId: tab.id, isMuted: newAudioState });
 			}
 		});
 	}
