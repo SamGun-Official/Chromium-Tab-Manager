@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en-US" class="min-h-96">
+<html lang="en-US" class="min-h-[420px]">
 	<head>
 		<meta charset="UTF-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -8,98 +8,163 @@
 		<link rel="stylesheet" type="text/css" href="src/css/build.css" />
 		<link rel="stylesheet" type="text/css" href="src/css/style.css" />
 	</head>
-	<body class="w-[420px] p-5 dark-theme" data-theme="dark">
-		<div id="wrapper" class="flex flex-col gap-y-5">
+	<body class="w-[420px] p-4 dark-theme" data-theme="dark">
+		<div id="wrapper" class="flex flex-col gap-y-4 text-sm">
 			<div id="overlay" class="flex items-center justify-center p-8 hidden">
-				<div class="max-w-80 w-full max-h-80 h-full flex items-center justify-center p-8 rounded-lg bg-[--pc] relative">
+				<div class="max-w-80 w-full max-h-80 h-full flex items-center justify-center p-8 rounded-md bg-[--pc] relative">
 					<button id="close_modal" class="absolute top-4 right-4">
 						<img src="./src/images/close.png" class="w-6 h-6" alt="Close" />
 					</button>
 					<div id="popup_content" class="grow font-semibold text-[--sc]"></div>
 				</div>
 			</div>
-			<div class="flex items-center justify-between font-bold text-2xl leading-none">
-				<h1 id="extension_title">Chromium Tab Manager</h1>
+			<div class="flex items-center justify-between font-bold text-xl leading-none">
+				<div class="flex items-center gap-x-3">
+					<img id="extension_icon" src="./src/images/chromium.png" class="w-5 h-5 select-none" alt="Icon" />
+					<h1 id="extension_title">Chromium Tab Manager</h1>
+				</div>
 				<span id="extension_version">v1.0.0</span>
 			</div>
-			<div class="flex flex-col justify-center text-base">
-				<input type="text" class="border-2 border-primary rounded-lg p-2" name="filter_domain" id="filter_domain" placeholder="Filter Opened Tab URL Using Keyword" />
+			<div id="popup_control" class="flex flex-col justify-center gap-y-3">
+				<input type="text" class="border-2 border-primary rounded-md p-2" name="filter_domain" id="filter_domain" placeholder="Filter Opened Tab URL Using Keyword" />
+				<div class="w-full grid grid-cols-3 gap-x-2 gap-y-1.5">
+					<label for="show_all" class="flex items-center gap-x-3">
+						<input type="radio" class="w-4 h-4" name="show_tab_by_category" id="show_all" value="<all>" tabindex="0" />
+						<span class="select-none">Show All</span>
+					</label>
+					<label for="show_audible_only" class="flex items-center gap-x-3">
+						<input type="radio" class="w-4 h-4" name="show_tab_by_category" id="show_audible_only" value="<audible>" tabindex="0" />
+						<span class="select-none">Audible Only</span>
+					</label>
+					<label for="show_grouped_only" class="flex items-center gap-x-3">
+						<input type="radio" class="w-4 h-4" name="show_tab_by_category" id="show_grouped_only" value="<grouped>" tabindex="0" />
+						<span class="select-none">Grouped Only</span>
+					</label>
+					<label for="show_loaded_only" class="flex items-center gap-x-3">
+						<input type="radio" class="w-4 h-4" name="show_tab_by_category" id="show_loaded_only" value="<loaded>" tabindex="0" />
+						<span class="select-none">Loaded Only</span>
+					</label>
+					<label for="sort_by" class="flex items-center gap-x-3 col-span-2">
+						<span class="select-none">Sort By: </span>
+						<select name="sort_by" id="sort_by" class="h-full flex-1 text-xs text-[--sc] border border-primary rounded-md">
+							<option value="tab_order_asc" selected>Tab Order (Ascending)</option>
+							<option value="tab_order_desc">Tab Order (Descending)</option>
+							<option value="last_accessed_asc">First Accessed Time</option>
+							<option value="last_accessed_desc">Last Accessed Time</option>
+							<option value="group_name_asc">Group Name (A-Z)</option>
+							<option value="group_name_desc">Group Name (Z-A)</option>
+						</select>
+					</label>
+				</div>
+				<button id="clear_all" class="bg-[--c1] flex-1 font-semibold text-[--sc] px-2 py-1.5 rounded-md select-none">Clear All</button>
 			</div>
-			<div id="tab_query" class="text-base hidden">
-				<div class="flex justify-between mb-3">
-					<div class="font-semibold">Search Found: <span id="search_count">0</span></div>
-					<span class="message font-semibold text-green-500 hidden">URL Copied!</span>
+			<div class="divider"></div>
+			<div class="relative">
+				<div id="info_text" class="flex justify-between mb-3">
+					<div id="info_header" class="font-semibold">Extension Information</div>
+					<div class="flex items-center gap-x-3">
+						<span class="message font-semibold text-green-500 hidden">URL copied to clipboard!</span>
+						<button id="more_options" class="w-5 h-5 flex items-center justify-center shrink-0 color-inverter select-none" title="Click to show/hide more options" data-state="closed">
+							<img src="./src/images/gear.png" class="w-4 h-4 mb-0.5" alt="Options" />
+						</button>
+					</div>
 				</div>
-				<div id="extra_btn" class="flex gap-x-3 font-semibold text-sm mb-3.5 hidden">
-					<button id="close_all_tab" class="bg-[--c2] flex-1 text-[--sc] px-2 py-1 rounded-full button-border">Close All</button>
-					<button id="bulk_edit_domain" class="bg-[--c3] flex-1 text-[--sc] px-2 py-1 rounded-full button-border">Bulk Edit</button>
-					<button id="download_json" class="bg-[--c5] flex-1 text-[--sc] px-2 py-1 rounded-full button-border">Save JSON</button>
+				<div id="extra_btn" class="dark-theme absolute w-full max-h-[324px] h-full hidden z-10">
+					<div class="grid grid-cols-2 gap-x-2 gap-y-1.5">
+						<button id="close_listed_tabs" class="bg-[--c2] font-semibold text-[--sc] px-2 py-1.5 rounded-md">Close All Tabs</button>
+						<button id="bulk_edit_domain" class="bg-[--c3] font-semibold text-[--sc] px-2 py-1.5 rounded-md">Bulk Edit Domain</button>
+						<button id="download_to_json" class="bg-[--c4] font-semibold text-[--sc] px-2 py-1.5 rounded-md">Save To JSON</button>
+						<button id="restore_from_json" class="bg-[--c5] font-semibold text-[--sc] px-2 py-1.5 rounded-md">Restore From JSON</button>
+					</div>
+					<h1 class="mt-3 font-semibold text-center underline">Click back the gear icon to close this menu!</h1>
 				</div>
+				<div id="loading" class="hidden">Loading...</div>
 				<div id="search_not_found" class="hidden">No tab was found.</div>
-				<div id="row_template" class="flex items-center hidden" data-tabid="-1">
-					<div class="icon default-icon min-w-9 min-h-9"></div>
-					<div class="flex flex-col grow gap-y-1 mx-3 leading-snug overflow-hidden">
-						<div class="info-title flex items-center gap-x-2">
-							<button class="btn-volume w-3 h-3 shrink-0 hidden color-inverter" title="Click to mute/unmute tab">
-								<img src="./src/images/volume_unmuted.png" alt="Volume" />
+				<div id="bottom_section">
+					<div id="tab_query">
+						<div id="row_template" class="flex items-center hidden" data-tabid="-1">
+							<div class="icon default-icon dark-theme w-9 h-9 shrink-0 rounded-md" tabindex="0"></div>
+							<div class="flex flex-col grow gap-y-1 mx-2 px-1 leading-snug overflow-hidden">
+								<div class="info-title flex items-center justify-between gap-x-2">
+									<div class="overflow-info flex items-center gap-x-2">
+										<button class="btn-volume w-3 h-3 shrink-0 hidden color-inverter select-none" title="Click to mute/unmute tab">
+											<img src="./src/images/volume_unmuted.png" alt="Volume" />
+										</button>
+										<div class="group-name overflow-info max-w-20 shrink-0 px-2 text-[--sc] text-xs font-semibold rounded-md hidden" title="Group Name" style="background-color: grey">Group Name</div>
+										<label for="title" class="overflow-info text-xs font-semibold" title="SamGun-Official">SamGun-Official</label>
+									</div>
+								</div>
+								<div class="info-url flex items-center justify-between gap-x-2">
+									<label for="url" class="overflow-info text-xs" title="https://github.com/SamGun-Official">https://github.com/SamGun-Official</label>
+									<div class="flex items-center gap-x-2">
+										<button class="btn-discard w-3 h-3 shrink-0 select-none" title="Unload this tab">
+											<img src="./src/images/disabled.png" class="color-inverter" alt="Discard" />
+										</button>
+										<button class="btn-pin w-3 h-3 shrink-0 select-none" title="Pin this tab">
+											<img src="./src/images/pin.png" class="color-inverter -rotate-45" alt="Pin" />
+										</button>
+										<button class="btn-link w-3 h-3 shrink-0 select-none" title="Switch to this tab">
+											<img src="./src/images/link.png" class="color-inverter" alt="Link" />
+										</button>
+										<button class="btn-info w-3 h-3 shrink-0 select-none" title="Last accessed on ...">
+											<img src="./src/images/information.png" class="color-inverter" alt="Info" />
+										</button>
+									</div>
+								</div>
+							</div>
+						</div>
+						<div id="tab_list" class="max-h-[324px] flex flex-col gap-y-3 overflow-x-hidden overflow-y-auto hidden"></div>
+					</div>
+					<div id="tab_counter" class="flex flex-col gap-y-4">
+						<div class="flex flex-col justify-center gap-y-1.5">
+							<div id="most_visited_site" class="data-row-info">
+								<span class="shrink-0">Most Visited Site:</span>
+								<a href="#" target="_blank" class="link underline overflow-info" data-identifier="1">None</a>
+							</div>
+							<div id="opened_windows" class="data-row-info">
+								<span>Opened Window Count:</span>
+								<span class="font-bold" data-identifier="2"></span>
+							</div>
+							<div id="opened_tabs" class="data-row-info">
+								<span>Opened Tab Count:</span>
+								<span class="font-bold" data-identifier="3"></span>
+							</div>
+							<div id="current_window_tabs" class="data-row-info">
+								<span>Current Window Tab Count:</span>
+								<span class="font-bold" data-identifier="4"></span>
+							</div>
+							<div id="opened_peak_tabs" class="data-row-info">
+								<span>Highest Peak Tab Count:</span>
+								<span class="font-bold" data-identifier="5"></span>
+								<a href="#" id="reset_peak_count" class="link underline ml-2">Reset</a>
+							</div>
+							<div id="badge_background_color" class="data-row-info">
+								<span>Extension Badge Color:</span>
+								<div class="flex gap-x-2">
+									<button class="color-options button-border font-semibold bg-[--c1] text-[--sc]" data-badge-color="blue" tabindex="0"></button>
+									<button class="color-options button-border font-semibold bg-[--c2] text-[--sc]" data-badge-color="red" tabindex="0"></button>
+									<button class="color-options button-border font-semibold bg-[--c3] text-[--sc]" data-badge-color="orange" tabindex="0"></button>
+									<button class="color-options button-border font-semibold bg-[--c4] text-[--sc]" data-badge-color="yellow" tabindex="0"></button>
+									<button class="color-options button-border font-semibold bg-[--c5] text-[--sc]" data-badge-color="green" tabindex="0"></button>
+									<button class="color-options button-border font-semibold bg-[--c6] text-[--pc]" data-badge-color="purple" tabindex="0"></button>
+									<button class="color-options button-border font-semibold bg-[--c7] text-[--sc]" data-badge-color="pink" tabindex="0"></button>
+								</div>
+							</div>
+						</div>
+						<div class="divider"></div>
+						<div class="flex items-center justify-between gap-x-3">
+							<a href="https://github.com/SamGun-Official" class="flex items-center gap-x-3 light-theme-anchor overflow-info" target="_blank">
+								<img src="./src/images/github.png" class="w-10 h-10 select-none" alt="GitHub" />
+								<div class="flex flex-col overflow-info">
+									<span class="font-semibold">SamGun-Official</span>
+									<span class="overflow-info">(https://github.com/SamGun-Official)</span>
+								</div>
+							</a>
+							<button id="theme_toggle" class="w-10 h-10 shrink-0 p-2 bg-[--theme-dark] rounded-full select-none">
+								<img src="./src/images/brightness.png" alt="Toggle" />
 							</button>
-							<label for="title" class="overflow-info text-xs font-semibold" title="SamGun-Official">SamGun-Official</label>
-						</div>
-						<div class="info-url flex items-center justify-between gap-x-2">
-							<label for="url" class="overflow-info text-xs" title="https://github.com/SamGun-Official">https://github.com/SamGun-Official</label>
-							<button class="btn-link w-3 h-3 shrink-0" title="Switch to this tab">
-								<img src="./src/images/link.png" class="color-inverter" alt="Link" />
-							</button>
 						</div>
 					</div>
-				</div>
-				<div id="tab_list" class="max-h-[372px] flex flex-col gap-y-3 overflow-x-hidden overflow-y-auto"></div>
-			</div>
-			<div id="tab_counter" class="flex flex-col gap-y-5">
-				<div class="divider"></div>
-				<div class="flex flex-col justify-center gap-y-1 text-base">
-					<div id="opened_windows" class="data-row-info">
-						<span>Opened Window Count:</span>
-						<span class="font-bold" data-identifier="1"></span>
-					</div>
-					<div id="opened_tabs" class="data-row-info">
-						<span>Opened Tab Count:</span>
-						<span class="font-bold" data-identifier="2"></span>
-					</div>
-					<div id="current_window_tabs" class="data-row-info">
-						<span>Current Window Tab Count:</span>
-						<span class="font-bold" data-identifier="3"></span>
-					</div>
-					<div id="opened_peak_tabs" class="data-row-info">
-						<span>Highest Peak Tab Count:</span>
-						<span class="font-bold" data-identifier="4"></span>
-						<a href="#" id="reset_peak_count" class="link underline ml-2">Reset</a>
-					</div>
-					<div id="badge_background_color" class="data-row-info">
-						<span>Extension Badge Color:</span>
-						<div class="flex gap-x-1">
-							<span class="color-options button-border bg-[--c1]" data-badge-color="blue"></span>
-							<span class="color-options button-border bg-[--c2]" data-badge-color="red"></span>
-							<span class="color-options button-border bg-[--c3]" data-badge-color="orange"></span>
-							<span class="color-options button-border bg-[--c4]" data-badge-color="yellow"></span>
-							<span class="color-options button-border bg-[--c5]" data-badge-color="green"></span>
-							<span class="color-options button-border bg-[--c6]" data-badge-color="purple"></span>
-							<span class="color-options button-border bg-[--c7]" data-badge-color="pink"></span>
-						</div>
-					</div>
-				</div>
-				<div class="divider"></div>
-				<div class="flex items-center justify-between text-base">
-					<a href="https://github.com/SamGun-Official" class="flex items-center gap-x-3 light-theme-anchor" target="_blank">
-						<img src="./src/images/github.png" class="w-9 h-9" alt="GitHub" />
-						<div class="flex flex-col leading-snug">
-							<span class="text-sm font-semibold">SamGun-Official</span>
-							<span class="text-xs">(https://github.com/SamGun-Official)</span>
-						</div>
-					</a>
-					<button id="theme_toggle" class="bg-[--theme-dark] w-9 h-9 p-2 rounded-full button-border">
-						<img src="./src/images/brightness.png" alt="Toggle" />
-					</button>
 				</div>
 			</div>
 		</div>

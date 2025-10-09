@@ -28,7 +28,9 @@
 	--scrollbar-track: var(--sc);
 	--scrollbar-margin: 0;
 	--pc: #e0e0e0;
+	--pc-2: #dddddd;
 	--sc: #1b1b23;
+	--sc-2: #181820;
 	--c1: #4285f4;
 	--c2: #ff0f0f;
 	--c3: #ffa500;
@@ -61,6 +63,7 @@ input {
 	bottom: 0;
 	left: 0;
 	right: 0;
+	z-index: 20;
 	width: 100%;
 	height: 100%;
 }
@@ -92,7 +95,7 @@ input {
 .data-row-info {
 	display: flex;
 	align-items: center;
-	column-gap: 0.5rem;
+	column-gap: 0.75rem;
 }
 
 .dark-theme .button-border {
@@ -124,8 +127,16 @@ input {
 .icon {
 	background-position: center;
 	background-repeat: no-repeat;
-	background-size: 100%;
+	background-size: 80%;
 	cursor: pointer;
+}
+
+.icon.dark-theme {
+	background-color: var(--sc-2);
+}
+
+.icon.light-theme {
+	background-color: var(--pc-2);
 }
 
 .icon.default-icon,
