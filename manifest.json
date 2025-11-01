@@ -1,6 +1,6 @@
 {
 	"name": "Chromium Tab Manager",
-	"version": "1.1.0",
+	"version": "2.0.0",
 	"description": "Counts all open tabs across all windows in Chromium-based browsers.",
 	"manifest_version": 3,
 	"author": "SamGun-Official",
@@ -27,7 +27,10 @@
 		"128": "src/images/chromium.png"
 	},
 	"permissions": [
+		"alarms",
+		"notifications",
 		"storage",
+		"system.memory",
 		"tabs",
 		"tabGroups",
 		"topSites"
