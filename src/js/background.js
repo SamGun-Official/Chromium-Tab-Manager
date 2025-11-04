@@ -11,33 +11,38 @@ const BADGE_COLOR_OPTIONS = {
 	cyan: "#78d9ec",
 	orange: "#fcad70",
 };
-
-function removeUnusedDataFromStorage(callbackFn) {
-	const unusedDataKeys = ["jsonData"];
-	chrome.storage.local.remove(unusedDataKeys, () => {
-		if (chrome.runtime.lastError) {
-			callbackFn({ error: chrome.runtime.lastError });
-		} else {
-			callbackFn({ error: null });
-		}
-	});
-}
+const DEFAULT_DATA_STORAGE = {
+	openedPeakTabCount: 1,
+	badgeColor: "blue",
+	colorTheme: "dark",
+	silenceNotification: false,
+	lastNotifiedVersion: "1.0.0",
+	lastDownloadUrl: null,
+	isNewerVersion: false,
+};
 
 function getAllDataFromStorage(callbackFn) {
 	chrome.storage.local.get(null, (data) => {
 		if (chrome.runtime.lastError) {
 			callbackFn({ error: chrome.runtime.lastError });
 		} else {
-			callbackFn({
-				openedPeakTabCount: data.openedPeakTabCount ?? 1,
-				badgeColor: data.badgeColor ?? "blue",
-				colorTheme: data.colorTheme ?? "dark",
-				silenceNotification: data.silenceNotification ?? false,
-				lastNotifiedVersion: data.lastNotifiedVersion ?? "1.0.0",
-				lastDownloadUrl: data.lastDownloadUrl ?? null,
-				isNewerVersion: data.isNewerVersion ?? false,
-				lastVersionCheckTimestamp: data.lastVersionCheckTimestamp ?? Date.now(),
-			});
+			const defaultDataKeys = Object.keys(DEFAULT_DATA_STORAGE);
+			const unusedDataKeys = Object.keys(data).filter((key) => !defaultDataKeys.includes(key));
+			const dataStorage = {};
+			for (const dataKey of defaultDataKeys) {
+				dataStorage[dataKey] = data[dataKey] ?? DEFAULT_DATA_STORAGE[dataKey];
+			}
+			if (unusedDataKeys.length > 0) {
+				chrome.storage.local.remove(unusedDataKeys, () => {
+					if (chrome.runtime.lastError) {
+						callbackFn({ error: chrome.runtime.lastError });
+					} else {
+						callbackFn(dataStorage);
+					}
+				});
+			} else {
+				callbackFn(dataStorage);
+			}
 		}
 	});
 }
@@ -134,15 +139,14 @@ function isNewerVersion(latestVersion, currentVersion) {
 	return false;
 }
 
-function checkForUpdates(callbackFn = undefined) {
+function checkForUpdates(forceCheck = false, callbackFn = undefined) {
+	if (typeof forceCheck === "function") {
+		callbackFn = forceCheck;
+		forceCheck = false;
+	}
+
 	getAllDataFromStorage(async (data) => {
 		try {
-			const lastVersionCheckTimestamp = data.lastVersionCheckTimestamp;
-			const currentTimestamp = Date.now();
-			if (lastVersionCheckTimestamp && currentTimestamp - lastVersionCheckTimestamp < 10 * 60 * 1000) {
-				throw new Error("Last check was less than 10 minutes ago.");
-			}
-
 			const response = await fetch("https://samgun-official.my.id/ext-updates/Chromium-Tab-Manager/version.json", { cache: "no-cache" });
 			if (!response.ok) {
 				throw new Error("Cannot fetch version data from the source.");
@@ -189,14 +193,12 @@ function checkForUpdates(callbackFn = undefined) {
 			}
 			if (!isNewerVersion(fetchedData.version, manifestData.version)) {
 				data.isNewerVersion = false;
-				data.lastVersionCheckTimestamp = currentTimestamp;
 				setAllDataToStorage(data, updateDataCallback);
 
 				return;
 			}
-			if (!isNewerVersion(fetchedData.version, data.lastNotifiedVersion)) {
+			if (!isNewerVersion(fetchedData.version, data.lastNotifiedVersion) && !forceCheck) {
 				data.isNewerVersion = true;
-				data.lastVersionCheckTimestamp = currentTimestamp;
 				setAllDataToStorage(data, updateDataCallback);
 
 				return;
@@ -205,7 +207,6 @@ function checkForUpdates(callbackFn = undefined) {
 			data.lastDownloadUrl = fetchedData.download_url;
 			data.lastNotifiedVersion = fetchedData.version;
 			data.isNewerVersion = true;
-			data.lastVersionCheckTimestamp = currentTimestamp;
 			setAllDataToStorage(data, (update) => {
 				updateDataCallback(update, true);
 			});
@@ -366,12 +367,10 @@ function removeTabsFromMemory(tabIds, deleteTabs, callbackFn) {
 chrome.alarms.create("update-check", { periodInMinutes: 1440 });
 chrome.alarms.onAlarm.addListener(() => checkForUpdates());
 chrome.runtime.onInstalled.addListener(() => {
-	removeUnusedDataFromStorage(() => {
-		setOpenedPeakTabCount(false, () => {
-			updateBadgeColor();
-			updateBadgeText();
-			checkForUpdates();
-		});
+	setOpenedPeakTabCount(false, () => {
+		updateBadgeColor();
+		updateBadgeText();
+		checkForUpdates();
 	});
 });
 chrome.runtime.onMessage.addListener((message, _, sendResponse) => {
@@ -523,7 +522,7 @@ chrome.runtime.onMessage.addListener((message, _, sendResponse) => {
 	}
 	if (message.checkUpdate) {
 		const getUpdateInfoData = new Promise((resolve, reject) => {
-			checkForUpdates((result) => {
+			checkForUpdates(true, (result) => {
 				if (result.error) {
 					reject(result);
 				} else {
