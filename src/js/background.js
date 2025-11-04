@@ -36,6 +36,7 @@ function getAllDataFromStorage(callbackFn) {
 				lastNotifiedVersion: data.lastNotifiedVersion ?? "1.0.0",
 				lastDownloadUrl: data.lastDownloadUrl ?? null,
 				isNewerVersion: data.isNewerVersion ?? false,
+				lastVersionCheckTimestamp: data.lastVersionCheckTimestamp ?? Date.now(),
 			});
 		}
 	});
@@ -133,16 +134,23 @@ function isNewerVersion(latestVersion, currentVersion) {
 	return false;
 }
 
-async function checkForUpdates(callbackFn = undefined) {
-	try {
-		const response = await fetch("https://samgun-official.my.id/ext-updates/Chromium-Tab-Manager/version.json");
-		if (!response.ok) {
-			throw new Error("Cannot fetch version data from the source.");
-		}
+function checkForUpdates(callbackFn = undefined) {
+	getAllDataFromStorage(async (data) => {
+		try {
+			const lastVersionCheckTimestamp = data.lastVersionCheckTimestamp;
+			const currentTimestamp = Date.now();
+			if (lastVersionCheckTimestamp && currentTimestamp - lastVersionCheckTimestamp < 10 * 60 * 1000) {
+				throw new Error("Last check was less than 10 minutes ago.");
+			}
 
-		const fetchedData = await response.json();
-		const manifestData = chrome.runtime.getManifest();
-		getAllDataFromStorage((data) => {
+			const response = await fetch("https://samgun-official.my.id/ext-updates/Chromium-Tab-Manager/version.json", { cache: "no-cache" });
+			if (!response.ok) {
+				throw new Error("Cannot fetch version data from the source.");
+			}
+
+			const fetchedData = await response.json();
+			const manifestData = chrome.runtime.getManifest();
+
 			function updateDataCallback(update, createNotification = false) {
 				if (update.error) {
 					if (callbackFn) {
@@ -181,12 +189,14 @@ async function checkForUpdates(callbackFn = undefined) {
 			}
 			if (!isNewerVersion(fetchedData.version, manifestData.version)) {
 				data.isNewerVersion = false;
+				data.lastVersionCheckTimestamp = currentTimestamp;
 				setAllDataToStorage(data, updateDataCallback);
 
 				return;
 			}
 			if (!isNewerVersion(fetchedData.version, data.lastNotifiedVersion)) {
 				data.isNewerVersion = true;
+				data.lastVersionCheckTimestamp = currentTimestamp;
 				setAllDataToStorage(data, updateDataCallback);
 
 				return;
@@ -195,17 +205,18 @@ async function checkForUpdates(callbackFn = undefined) {
 			data.lastDownloadUrl = fetchedData.download_url;
 			data.lastNotifiedVersion = fetchedData.version;
 			data.isNewerVersion = true;
+			data.lastVersionCheckTimestamp = currentTimestamp;
 			setAllDataToStorage(data, (update) => {
 				updateDataCallback(update, true);
 			});
-		});
-	} catch (error) {
-		if (callbackFn) {
-			callbackFn({ error: error });
-		}
+		} catch (error) {
+			if (callbackFn) {
+				callbackFn({ error: error, message: error.message });
+			}
 
-		return;
-	}
+			return;
+		}
+	});
 }
 
 function fetchExtensionData(callbackFn) {
@@ -514,7 +525,7 @@ chrome.runtime.onMessage.addListener((message, _, sendResponse) => {
 		const getUpdateInfoData = new Promise((resolve, reject) => {
 			checkForUpdates((result) => {
 				if (result.error) {
-					reject(result.error);
+					reject(result);
 				} else {
 					resolve(result);
 				}
@@ -525,7 +536,7 @@ chrome.runtime.onMessage.addListener((message, _, sendResponse) => {
 			if (updateInfoData.status === "fulfilled") {
 				sendResponse({ updateInfo: updateInfoData.value });
 			} else {
-				sendResponse({ error: updateInfoData.reason });
+				sendResponse(updateInfoData.reason);
 			}
 		});
 	}

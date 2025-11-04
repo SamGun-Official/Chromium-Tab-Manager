@@ -543,7 +543,9 @@ document.addEventListener("DOMContentLoaded", () => {
 	});
 	document.getElementById("check_update").addEventListener("click", () => {
 		chrome.runtime.sendMessage({ checkUpdate: true }, (response) => {
-			if (!response.error) {
+			if (response.error) {
+				showMessage(response.message ?? "Failed to check update!", false);
+			} else {
 				const notifier = document.getElementById("download_notifier");
 				notifier.dataset.updateAvailable = response.updateInfo.isNewerVersion;
 				if (response.updateInfo.isNewerVersion) {
