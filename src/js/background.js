@@ -1,3 +1,4 @@
+const DEFAULT_DELAY_MS = 500;
 const DEFAULT_BADGE_COLOR = "blue";
 const DEFAULT_THEME_COLOR = "dark";
 const BADGE_COLOR_OPTIONS = {
@@ -328,39 +329,94 @@ function fetchExtensionData(callbackFn) {
 	});
 }
 
-function removeTabsFromMemory(tabIds, deleteTabs, callbackFn) {
-	const promises = tabIds.map((tabId) => {
-		return new Promise((resolve, reject) => {
-			if (deleteTabs) {
-				chrome.tabs.remove(tabId, () => {
-					if (chrome.runtime.lastError) {
-						reject({
-							error: chrome.runtime.lastError,
-							tabId: tabId,
-						});
-					} else {
-						resolve({ tabId: tabId });
-					}
-				});
-			} else {
-				chrome.tabs.discard(tabId, (tab) => {
-					if (chrome.runtime.lastError) {
-						reject({
-							error: chrome.runtime.lastError,
-							tabId: tabId,
-						});
-					} else {
-						resolve({ tabId: tab.id });
-					}
-				});
-			}
-		});
+async function removeTabsFromMemory(tabIds, deleteTabs, callbackFn) {
+	const resolvedTabs = [];
+	const rejectedTabs = [];
+	for (const tabId of tabIds) {
+		try {
+			const result = await new Promise((resolve, reject) => {
+				if (deleteTabs) {
+					chrome.tabs.remove(tabId, () => {
+						if (chrome.runtime.lastError) {
+							reject({
+								error: chrome.runtime.lastError,
+								tabId: tabId,
+							});
+						} else {
+							resolve({ tabId: tabId });
+						}
+					});
+				} else {
+					chrome.tabs.discard(tabId, (tab) => {
+						if (chrome.runtime.lastError) {
+							reject({
+								error: chrome.runtime.lastError,
+								tabId: tabId,
+							});
+						} else {
+							resolve({ tabId: tab.id });
+						}
+					});
+				}
+			});
+			resolvedTabs.push(result);
+		} catch (error) {
+			rejectedTabs.push(error);
+		}
+
+		await new Promise((result) => setTimeout(result, DEFAULT_DELAY_MS));
+	}
+
+	callbackFn({
+		resolvedTabs: resolvedTabs,
+		rejectedTabs: rejectedTabs,
 	});
-	Promise.allSettled(promises).then((results) => {
-		callbackFn({
-			resolvedTabs: results.filter((result) => result.status === "fulfilled").map((result) => result.value),
-			rejectedTabs: results.filter((result) => result.status === "rejected").map((result) => result.reason),
+}
+
+async function restoreTabsFromJSON(data, callbackFn) {
+	const resolvedTabs = [];
+	const rejectedTabs = [];
+	const batchSize = 10;
+	for (let i = 0; i < data.length; i += batchSize) {
+		const batch = data.slice(i, i + batchSize);
+		const promises = batch.map(async (url, index) => {
+			return new Promise((result) => setTimeout(result, index * DEFAULT_DELAY_MS)).then(() => {
+				return new Promise((resolve, reject) => {
+					chrome.tabs.create({ url, active: false }, (tab) => {
+						if (chrome.runtime.lastError) {
+							reject({ error: chrome.runtime.lastError });
+						} else {
+							const listener = async (tabId, changeInfo) => {
+								if (tabId === tab.id && changeInfo.status === "complete") {
+									chrome.tabs.onUpdated.removeListener(listener);
+									await chrome.tabs.discard(tab.id, (discardedTab) => {
+										if (chrome.runtime.lastError) {
+											reject({ error: chrome.runtime.lastError });
+										} else {
+											resolve(discardedTab);
+										}
+									});
+								}
+							};
+							chrome.tabs.onUpdated.addListener(listener);
+						}
+					});
+				});
+			});
 		});
+		const results = await Promise.allSettled(promises);
+		for (const result of results) {
+			if (result.status === "fulfilled") {
+				resolvedTabs.push(result.value);
+			} else {
+				rejectedTabs.push(result.reason);
+			}
+		}
+	}
+
+	callbackFn({
+		resolvedTabs: resolvedTabs,
+		rejectedTabs: rejectedTabs,
 	});
 }
 
@@ -411,7 +467,7 @@ chrome.runtime.onMessage.addListener((message, _, sendResponse) => {
 						});
 					});
 				});
-				Promise.allSettled(promises).then((results) => {
+				Promise.allSettled(promises).then(async (results) => {
 					const groupData = Object.fromEntries(results.filter((result) => result.status === "fulfilled").map((result) => [result.value.id, { ...result.value }]));
 					filteredTabs = filteredTabs.map((tab) => {
 						if (tab.groupId !== -1 && groupData[tab.groupId]) {
@@ -421,10 +477,16 @@ chrome.runtime.onMessage.addListener((message, _, sendResponse) => {
 						return tab;
 					});
 					if (oldDomain && newDomain) {
-						const updatePromises = filteredTabs.map((tab) => {
+						const resolvedTabs = [];
+						const rejectedTabs = [];
+						for (const tab of filteredTabs) {
 							const url = new URL(tab.url);
-							if (url.hostname.toLowerCase().trim().includes(oldDomain.toLowerCase().trim())) {
-								return new Promise((resolve, reject) => {
+							if (!url.hostname.toLowerCase().trim().includes(oldDomain.toLowerCase().trim())) {
+								continue;
+							}
+
+							try {
+								const result = await new Promise((resolve, reject) => {
 									const newUrl = url.href.replace(oldDomain.toLowerCase().trim(), newDomain.toLowerCase().trim());
 									chrome.tabs.update(tab.id, { url: newUrl }, (updatedTab) => {
 										if (chrome.runtime.lastError) {
@@ -434,15 +496,17 @@ chrome.runtime.onMessage.addListener((message, _, sendResponse) => {
 										}
 									});
 								});
+								resolvedTabs.push(result);
+							} catch (error) {
+								rejectedTabs.push(error);
 							}
 
-							return null;
-						});
-						Promise.allSettled(updatePromises.filter(Boolean)).then((results) => {
-							sendResponse({
-								resolvedTabs: results.filter((result) => result.status === "fulfilled").map((result) => result.value),
-								rejectedTabs: results.filter((result) => result.status === "rejected").map((result) => result.reason),
-							});
+							await new Promise((result) => setTimeout(result, DEFAULT_DELAY_MS));
+						}
+
+						sendResponse({
+							resolvedTabs: resolvedTabs,
+							rejectedTabs: rejectedTabs,
 						});
 					} else if (deleteTabs || unloadTabs) {
 						const tabIds = filteredTabs.map((tab) => tab.id);
@@ -539,21 +603,9 @@ chrome.runtime.onMessage.addListener((message, _, sendResponse) => {
 			}
 		});
 	}
-	if (message.restoreTabs && message.data) {
-		message.data.forEach((url) => {
-			chrome.tabs.create({ url, active: false }, (tab) => {
-				if (chrome.runtime.lastError) {
-					sendResponse({ error: chrome.runtime.lastError });
-				} else {
-					const listener = async (tabId, changeInfo) => {
-						if (tabId === tab.id && changeInfo.status === "complete") {
-							await chrome.tabs.discard(tab.id);
-							chrome.tabs.onUpdated.removeListener(listener);
-						}
-					};
-					chrome.tabs.onUpdated.addListener(listener);
-				}
-			});
+	if (message.restoreTabs) {
+		restoreTabsFromJSON(message.data, (response) => {
+			sendResponse(response);
 		});
 	}
 
@@ -566,12 +618,24 @@ chrome.runtime.onStartup.addListener(() => {
 		checkForUpdates();
 	});
 });
-chrome.tabs.onCreated.addListener(() => {
+chrome.tabs.onActivated.addListener(() => {
 	setOpenedPeakTabCount(false, () => {
+		updateBadgeColor();
 		updateBadgeText();
 	});
 });
-chrome.tabs.onRemoved.addListener(() => updateBadgeText());
+chrome.tabs.onCreated.addListener(() => {
+	setOpenedPeakTabCount(false, () => {
+		updateBadgeColor();
+		updateBadgeText();
+	});
+});
+chrome.tabs.onRemoved.addListener(() => () => {
+	setOpenedPeakTabCount(false, () => {
+		updateBadgeColor();
+		updateBadgeText();
+	});
+});
 chrome.notifications.onClicked.addListener(() => {
 	getAllDataFromStorage((data) => {
 		if (data.lastDownloadUrl) {

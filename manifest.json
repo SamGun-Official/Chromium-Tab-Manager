@@ -1,6 +1,6 @@
 {
 	"name": "Chromium Tab Manager",
-	"version": "2.1.2",
+	"version": "2.1.3",
 	"description": "Counts all open tabs across all windows in Chromium-based browsers.",
 	"manifest_version": 3,
 	"author": "SamGun-Official",

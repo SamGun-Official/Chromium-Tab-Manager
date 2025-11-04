@@ -574,14 +574,18 @@ document.addEventListener("DOMContentLoaded", () => {
 			}
 		});
 	});
-	document.getElementById("replace_domain").addEventListener("click", () => {
+	document.getElementById("replace_domain").addEventListener("click", function () {
 		const filter = document.getElementById("selection_filter");
 		const keyword = document.getElementById("filter_domain");
 		const options = {
 			useFilter: document.getElementById("domain_edit_filtered").checked && (filter.value !== "" || keyword.value !== "") ? true : false,
 			extraAction: "REPLACE_DOMAIN",
 		};
+		this.textContent = "Loading...";
+		document.getElementById("wrapper").inert = true;
 		queryTabs(keyword.value, options, (response) => {
+			this.textContent = "Edit";
+			document.getElementById("wrapper").inert = false;
 			resetPopupView();
 			if (response.error) {
 				showMessage("Failed to edit domains of listed tabs!", false);
@@ -599,14 +603,18 @@ document.addEventListener("DOMContentLoaded", () => {
 		document.getElementById("close_tabs_actions").classList.remove("hidden");
 
 		const buttonAccept = document.getElementById("close_all");
-		buttonAccept.addEventListener("click", () => {
+		buttonAccept.addEventListener("click", function () {
 			const filter = document.getElementById("selection_filter");
 			const keyword = document.getElementById("filter_domain");
 			const options = {
 				useFilter: document.getElementById("manage_tabs_filtered").checked && (filter.value !== "" || keyword.value !== "") ? true : false,
 				extraAction: "DELETE_TABS",
 			};
+			this.textContent = "Loading...";
+			document.getElementById("wrapper").inert = true;
 			queryTabs(keyword.value, options, (response) => {
+				this.textContent = "Close Tabs";
+				document.getElementById("wrapper").inert = false;
 				resetPopupView();
 				if (response.error) {
 					showMessage("Failed to close listed tabs!", false);
@@ -626,14 +634,18 @@ document.addEventListener("DOMContentLoaded", () => {
 			document.getElementById("close_tabs_actions").classList.add("hidden");
 		});
 	});
-	document.getElementById("unload_listed_tabs").addEventListener("click", () => {
+	document.getElementById("unload_listed_tabs").addEventListener("click", function () {
 		const filter = document.getElementById("selection_filter");
 		const keyword = document.getElementById("filter_domain");
 		const options = {
 			useFilter: document.getElementById("manage_tabs_filtered").checked && (filter.value !== "" || keyword.value !== "") ? true : false,
 			extraAction: "UNLOAD_TABS",
 		};
+		this.textContent = "Loading...";
+		document.getElementById("wrapper").inert = true;
 		queryTabs(keyword.value, options, (response) => {
+			this.textContent = "Unload Tabs";
+			document.getElementById("wrapper").inert = false;
 			resetPopupView();
 			if (response.error) {
 				showMessage("Failed to unload listed tabs!", false);
@@ -666,7 +678,7 @@ document.addEventListener("DOMContentLoaded", () => {
 			}
 		});
 	});
-	document.getElementById("restore_from_json").addEventListener("click", () => {
+	document.getElementById("restore_from_json").addEventListener("click", function () {
 		const tempInput = document.createElement("input");
 		tempInput.accept = "application/json";
 		tempInput.type = "file";
@@ -691,12 +703,15 @@ document.addEventListener("DOMContentLoaded", () => {
 					return;
 				}
 
+				this.textContent = "Loading...";
+				document.getElementById("wrapper").inert = true;
 				chrome.runtime.sendMessage({ restoreTabs: true, data: urls }, (response) => {
-					if (response.error) {
-						showMessage("Failed to restore tabs!", false);
-					} else {
-						showMessage("Tabs restored successfully!");
-					}
+					const resolvedTabCount = response.resolvedTabs.length;
+					const rejectedTabCount = response.rejectedTabs.length;
+					this.textContent = "Load JSON";
+					document.getElementById("wrapper").inert = false;
+					resetPopupView();
+					showMessage(`${resolvedTabCount} tab${resolvedTabCount > 1 ? "s" : ""} restored${rejectedTabCount > 0 ? `, ${rejectedTabCount} failed` : ""}!`);
 				});
 			} catch {
 				showMessage("Failed to open JSON data!", false);
