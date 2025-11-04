@@ -217,6 +217,9 @@
   .z-30 {
     z-index: 30;
   }
+  .z-40 {
+    z-index: 40;
+  }
   .mx-2 {
     margin-inline: calc(var(--spacing) * 2);
   }
@@ -228,9 +231,6 @@
   }
   .mt-0\.5 {
     margin-top: calc(var(--spacing) * 0.5);
-  }
-  .mt-1 {
-    margin-top: calc(var(--spacing) * 1);
   }
   .mb-3 {
     margin-bottom: calc(var(--spacing) * 3);
@@ -264,6 +264,9 @@
   }
   .h-full {
     height: 100%;
+  }
+  .h-px {
+    height: 1px;
   }
   .max-h-4 {
     max-height: calc(var(--spacing) * 4);
@@ -355,9 +358,6 @@
   .gap-y-3 {
     row-gap: calc(var(--spacing) * 3);
   }
-  .gap-y-8 {
-    row-gap: calc(var(--spacing) * 8);
-  }
   .gap-y-\[1px\] {
     row-gap: 1px;
   }
@@ -408,6 +408,9 @@
   }
   .bg-\(--p1\) {
     background-color: var(--p1);
+  }
+  .bg-\(--s1\) {
+    background-color: var(--s1);
   }
   .p-2 {
     padding: calc(var(--spacing) * 2);
@@ -465,9 +468,6 @@
     --tw-font-weight: var(--font-weight-semibold);
     font-weight: var(--font-weight-semibold);
   }
-  .text-\(--s2\) {
-    color: var(--s2);
-  }
   .text-green-500 {
     color: var(--color-green-500);
   }
@@ -486,6 +486,24 @@
   .select-none {
     -webkit-user-select: none;
     user-select: none;
+  }
+  .hover\:\!border-0 {
+    &:hover {
+      @media (hover: hover) {
+        border-style: var(--tw-border-style) !important;
+        border-width: 0px !important;
+      }
+    }
+  }
+  .focus\:outline-hidden {
+    &:focus {
+      --tw-outline-style: none;
+      outline-style: none;
+      @media (forced-colors: active) {
+        outline: 2px solid transparent;
+        outline-offset: 2px;
+      }
+    }
   }
 }
 @property --tw-leading {
@@ -549,6 +567,11 @@
   syntax: "*";
   inherits: false;
 }
+@property --tw-border-style {
+  syntax: "*";
+  inherits: false;
+  initial-value: solid;
+}
 @layer properties {
   @supports ((-webkit-hyphens: none) and (not (margin-trim: inline))) or ((-moz-orient: inline) and (not (color:rgb(from red r g b)))) {
     *, ::before, ::after, ::backdrop {
@@ -567,6 +590,7 @@
       --tw-drop-shadow-color: initial;
       --tw-drop-shadow-alpha: 100%;
       --tw-drop-shadow-size: initial;
+      --tw-border-style: solid;
     }
   }
 }

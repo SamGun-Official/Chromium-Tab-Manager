@@ -12,10 +12,13 @@
 		<link rel="stylesheet" type="text/css" href="src/css/style.css" />
 	</head>
 	<body class="relative w-[480px] !text-sm dark-theme" data-theme="dark" data-view="tab_counter">
+		<div id="loading_overlay" class="absolute z-40 top-0 bottom-0 left-0 right-0 w-full h-full flex items-center justify-center p-8 bg-(--s1)">
+			<div class="loading"></div>
+		</div>
 		<div id="modal_overlay" class="absolute z-30 top-0 bottom-0 left-0 right-0 w-full h-full flex items-center justify-center p-8 hidden">
 			<div class="relative max-w-80 w-full max-h-80 h-full flex items-center justify-center p-8 bg-(--p1) rounded-md">
 				<button id="close_modal" class="absolute top-4 right-4 cursor-pointer">
-					<img src="src/images/close.png" class="w-6 h-6 select-none" alt="Close" />
+					<img src="src/images/close.png" class="w-5 h-5 select-none" alt="Close" />
 				</button>
 				<div id="modal_content" class="grow font-semibold default-color"></div>
 			</div>
@@ -71,8 +74,8 @@
 					<div class="flex grow items-center justify-end gap-x-3 overflow-info">
 						<span id="message" class="font-semibold text-green-500 overflow-info hidden" title="URL copied to clipboard!">URL copied to clipboard!</span>
 					</div>
-					<div class="relative w-5 h-5 shrink-0">
-						<button id="options" class="absolute z-10 -top-px w-5 h-5 flex items-center justify-center cursor-pointer adaptive-button" title="Click to show/hide more options" data-state="closed">
+					<div class="relative w-4 h-4 shrink-0">
+						<button id="options" class="absolute z-10 -top-px w-4 h-4 flex items-center justify-center cursor-pointer adaptive-button hover:!border-0" title="Click to show/hide more options" data-state="closed">
 							<img src="src/images/menu.png" class="w-4 h-4 select-none color-inverter" alt="Options" />
 						</button>
 					</div>
@@ -105,26 +108,42 @@
 							</div>
 						</div>
 						<div id="option_row_3" class="w-full flex flex-col justify-center p-2 adaptive-background">
-							<div class="w-full flex items-center gap-x-3">
-								<span>Manage Tabs:</span>
-								<div class="flex items-center gap-x-2" title="Manage all tabs">
-									<input type="radio" name="manage_tabs" id="manage_tabs_all" class="cursor-pointer" value="manager_all_tabs" checked />
-									<label for="manage_tabs_all" class="select-none cursor-pointer">All Tabs</label>
-								</div>
-								<div class="flex items-center gap-x-2" title="Manage filtered tabs">
-									<input type="radio" name="manage_tabs" id="manage_tabs_filtered" class="cursor-pointer" value="manager_filtered_tabs" />
-									<label for="manage_tabs_filtered" class="select-none cursor-pointer">Filtered Tabs (Uses Filter Above)</label>
+							<div class="relative">
+								<div id="close_tabs_message" class="absolute z-10 w-full h-full text-center adaptive-background hidden">Close all listed tabs except the active one?</div>
+								<div id="manage_tabs_options" class="w-full flex items-center gap-x-3">
+									<span>Manage Tabs:</span>
+									<div class="flex items-center gap-x-2" title="Manage all tabs">
+										<input type="radio" name="manage_tabs" id="manage_tabs_all" class="cursor-pointer" value="manager_all_tabs" checked />
+										<label for="manage_tabs_all" class="select-none cursor-pointer">All Tabs</label>
+									</div>
+									<div class="flex items-center gap-x-2" title="Manage filtered tabs">
+										<input type="radio" name="manage_tabs" id="manage_tabs_filtered" class="cursor-pointer" value="manager_filtered_tabs" />
+										<label for="manage_tabs_filtered" class="select-none cursor-pointer">Filtered Tabs (Uses Filter Above)</label>
+									</div>
 								</div>
 							</div>
-							<div class="w-full flex items-center gap-x-3 mt-0.5">
-								<div class="w-full" title="Click to close listed tabs">
-									<button id="close_listed_tabs" class="w-full h-8 px-2 py-1 bg-(--c3) font-semibold rounded-md select-none cursor-pointer default-color adaptive-border">Close Tabs</button>
+							<div class="relative mt-0.5">
+								<div id="close_tabs_actions" class="absolute z-10 w-full flex items-center gap-x-3 adaptive-background">
+									<div class="w-full">
+										<button id="keep_list" class="w-full h-8 px-2 py-1 bg-(--c3) font-semibold rounded-md select-none cursor-pointer default-color adaptive-border">No</button>
+									</div>
+									<div class="w-full">
+										<button id="close_all" class="w-full h-8 px-2 py-1 bg-(--c5) font-semibold rounded-md select-none cursor-pointer default-color adaptive-border">Yes</button>
+									</div>
 								</div>
-								<div class="w-full" title="Click to save tabs to JSON data">
-									<button id="download_to_json" class="w-full h-8 px-2 py-1 bg-(--c4) font-semibold rounded-md select-none cursor-pointer default-color adaptive-border">Save JSON</button>
-								</div>
-								<div class="w-full" title="Click to restore tabs from JSON data">
-									<button id="restore_from_json" class="w-full h-8 px-2 py-1 bg-(--c5) font-semibold rounded-md select-none cursor-pointer default-color adaptive-border">Restore JSON</button>
+								<div id="manage_tabs_buttons" class="w-full flex items-center gap-x-3">
+									<div class="w-full" title="Close listed tabs except the active one">
+										<button id="close_listed_tabs" class="w-full h-8 px-2 py-1 bg-(--c3) font-semibold rounded-md select-none cursor-pointer default-color adaptive-border">Close Tabs</button>
+									</div>
+									<div class="w-full" title="Unload listed tabs except the active one">
+										<button id="unload_listed_tabs" class="w-full h-8 px-2 py-1 bg-(--c3) font-semibold rounded-md select-none cursor-pointer default-color adaptive-border">Unload Tabs</button>
+									</div>
+									<div class="w-full" title="Save listed tabs to JSON data">
+										<button id="download_to_json" class="w-full h-8 px-2 py-1 bg-(--c5) font-semibold rounded-md select-none cursor-pointer default-color adaptive-border">Save JSON</button>
+									</div>
+									<div class="w-full" title="Restore listed tabs from JSON data">
+										<button id="restore_from_json" class="w-full h-8 px-2 py-1 bg-(--c5) font-semibold rounded-md select-none cursor-pointer default-color adaptive-border">Load JSON</button>
+									</div>
 								</div>
 							</div>
 						</div>
@@ -132,12 +151,12 @@
 					<div id="tab_query" class="hidden">
 						<div id="row_template" class="relative w-full h-10 shrink-0 hidden" data-tabid="-1">
 							<div class="absolute z-20 w-full h-full flex items-center">
-								<button class="url-icon default-url-icon w-10 h-10 shrink-0 select-none cursor-pointer default-background-color adaptive-theme adaptive-background" title="Close this tab" tabindex="0"></button>
+								<button class="url-icon default-url-icon w-10 h-10 shrink-0 select-none cursor-pointer default-background-color adaptive-theme adaptive-background focus:outline-hidden" title="Close this tab" tabindex="0"></button>
 								<div class="divider w-px h-full shrink-0"></div>
 								<div class="h-10 flex flex-col grow justify-center gap-y-0.5 mx-2 overflow-hidden">
 									<div class="info-title flex items-center justify-between gap-x-2">
 										<div class="flex items-center gap-x-2 overflow-info">
-											<button class="btn-volume w-4 h-4 flex items-center justify-center shrink-0 cursor-pointer adaptive-button hidden" title="Click to mute/unmute tab">
+											<button class="btn-volume w-4 h-4 flex items-center justify-center shrink-0 cursor-pointer adaptive-button hover:!border-0 hidden" title="Mute this tab">
 												<img src="src/images/volume_unmuted.png" class="w-3 h-3 select-none color-inverter" alt="Volume" />
 											</button>
 											<div class="group-name max-w-20 max-h-4 shrink-0 px-2 font-semibold text-xs leading-3.5 rounded-md select-none default-color adaptive-border overflow-info hidden" title="Group Name" style="background-color: grey">Group Name</div>
@@ -148,13 +167,13 @@
 									<div class="info-url max-h-4 flex items-center justify-between gap-x-2">
 										<span class="tab-url text-xs underline select-none overflow-info" title="https://github.com/SamGun-Official">https://github.com/SamGun-Official</span>
 										<div class="h-full flex items-center gap-x-2">
-											<button class="btn-discard w-4 h-4 flex items-center justify-center shrink-0 cursor-pointer adaptive-button" title="Unload this tab">
+											<button class="btn-discard w-4 h-4 flex items-center justify-center shrink-0 cursor-pointer adaptive-button hover:!border-0" title="Unload this tab">
 												<img src="src/images/disabled.png" class="w-3 h-3 select-none color-inverter" alt="Discard" />
 											</button>
-											<button class="btn-pin w-4 h-4 flex items-center justify-center shrink-0 cursor-pointer adaptive-button" title="Pin this tab">
+											<button class="btn-pin w-4 h-4 flex items-center justify-center shrink-0 cursor-pointer adaptive-button hover:!border-0" title="Pin this tab">
 												<img src="src/images/unpinned.png" class="w-3 h-3 select-none color-inverter" alt="Pin" />
 											</button>
-											<button class="btn-link w-4 h-4 flex items-center justify-center shrink-0 cursor-pointer adaptive-button" title="Switch to this tab">
+											<button class="btn-link w-4 h-4 flex items-center justify-center shrink-0 cursor-pointer adaptive-button hover:!border-0" title="Switch to this tab">
 												<img src="src/images/link.png" class="w-3 h-3 select-none color-inverter" alt="Link" />
 											</button>
 										</div>
@@ -164,7 +183,11 @@
 							<div class="highlight w-full h-10 default-background-color adaptive-background"></div>
 						</div>
 						<div id="progress" class="hidden">No tab was found.</div>
-						<div id="tab_list" class="max-h-[368px] flex flex-col gap-y-px mt-1 pr-px overflow-x-hidden overflow-y-auto dark-scrollbar-style hidden"></div>
+						<div id="tab_list_container" class="flex flex-col justify-center gap-y-px hidden">
+							<div class="divider w-full h-px shrink-0"></div>
+							<div id="tab_list" class="w-full max-h-[368px] flex flex-col gap-y-px pr-px overflow-x-hidden overflow-y-auto dark-scrollbar-style"></div>
+							<div class="divider w-full h-px shrink-0"></div>
+						</div>
 					</div>
 					<div id="tab_counter" class="flex flex-col justify-center gap-y-1.5 mt-0.5">
 						<div id="most_visited_site" class="flex items-center gap-x-3">
@@ -173,23 +196,23 @@
 						</div>
 						<div id="system_info" class="flex items-center gap-x-3">
 							<span>System Information:</span>
-							<span class="font-bold" data-identifier="2">-</span>
+							<span class="font-semibold" data-identifier="2">-</span>
 						</div>
 						<div id="opened_windows" class="flex items-center gap-x-3">
 							<span>Opened Window Count:</span>
-							<span class="font-bold" data-identifier="3">1</span>
+							<span class="font-semibold" data-identifier="3">1</span>
 						</div>
 						<div id="opened_tabs" class="flex items-center gap-x-3">
 							<span>Opened Tab Count:</span>
-							<span class="font-bold" data-identifier="4">1</span>
+							<span class="font-semibold" data-identifier="4">1</span>
 						</div>
 						<div id="current_window_tabs" class="flex items-center gap-x-3">
 							<span>Current Window Tab Count:</span>
-							<span class="font-bold" data-identifier="5">1</span>
+							<span class="font-semibold" data-identifier="5">1</span>
 						</div>
 						<div id="opened_peak_tabs" class="flex items-center gap-x-3">
 							<span>Highest Peak Tab Count:</span>
-							<span class="font-bold" data-identifier="6">1</span>
+							<span class="font-semibold" data-identifier="6">1</span>
 							<a href="#" id="reset_peak_count" class="ml-2 underline adaptive-anchor" title="Reset current peak tab count">Reset</a>
 						</div>
 						<div id="badge_background_color" class="flex items-center gap-x-3">

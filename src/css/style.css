@@ -49,6 +49,25 @@ input[type="radio"] {
 	background-color: rgba(27, 27, 35, 0.7);
 }
 
+@keyframes spin {
+	0% {
+		transform: rotate(0deg);
+	}
+
+	100% {
+		transform: rotate(360deg);
+	}
+}
+
+.loading {
+	animation: spin 1s linear infinite;
+	border: 6px solid var(--p1);
+	border-radius: 50%;
+	border-top: 6px solid var(--t1);
+	min-width: 36px;
+	min-height: 36px;
+}
+
 .dark-theme,
 [data-theme="dark"] .adaptive-theme,
 [data-theme="light"] .divider {

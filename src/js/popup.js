@@ -90,9 +90,8 @@ function changeColorTheme(appliedTheme) {
 
 function fetchExtensionData(callbackFn) {
 	chrome.runtime.sendMessage({ fetchExtensionData: true }, (response) => {
-		if (chrome.runtime.lastError || response.error) {
-			showMessage("Check the popup console for error details.", false);
-			console.log("Error:", chrome.runtime.lastError ?? response.error);
+		if (response.error) {
+			showMessage("Failed to fetch extension data!", false);
 		} else {
 			document.getElementById("extension_icon").src = response.manifestIcon;
 			document.getElementById("extension_title").textContent = response.manifestName;
@@ -121,7 +120,7 @@ function fetchExtensionData(callbackFn) {
 				if (isNewerVersion) {
 					const notifier = document.getElementById("download_notifier");
 					notifier.dataset.updateAvailable = response.isNewerVersion;
-					notifier.href = response.lastDownloadURL;
+					notifier.href = response.lastDownloadUrl;
 					notifier.classList.remove("hidden");
 					notifier.querySelector("span").textContent = `v${response.lastNotifiedVersion}`;
 				}
@@ -142,6 +141,7 @@ function handleTabListChanges() {
 	if (tabListLength > 0 && tabListLength < 10) {
 		tabList.classList.remove("pr-px");
 	} else if (tabListLength < 1) {
+		document.getElementById("tab_list_container").classList.add("hidden");
 		progressText.textContent = "No tab was found.";
 		progressText.classList.remove("hidden");
 
@@ -151,30 +151,30 @@ function handleTabListChanges() {
 	}
 
 	progressText.classList.add("hidden");
+	document.getElementById("tab_list_container").classList.remove("hidden");
 }
 
-function isImageURLValid(url, callback) {
+function isImageUrlValid(url, callback) {
 	const img = new Image();
 	img.onload = () => callback(true);
 	img.onerror = () => callback(false);
-	img.src = url;
+	if (url) {
+		img.src = url;
+	}
 }
 
-function queryTabs(keyword, useFilter = true, additionalFlag = "", callbackFn = undefined) {
-	document.getElementById("tab_list").classList.add("hidden");
+function queryTabs(keyword, options = { useFilter: true, extraAction: undefined }, callbackFn = undefined) {
+	document.getElementById("tab_list_container").classList.add("hidden");
 	document.getElementById("tab_counter").classList.add("hidden");
-	keyword = useFilter ? keyword.toLowerCase().trim() : "";
+	document.getElementById("tab_list").innerHTML = "";
 
 	const progressText = document.getElementById("progress");
 	progressText.textContent = "Loading...";
 	progressText.classList.remove("hidden");
 
-	const filter = useFilter ? document.getElementById("selection_filter").value : "";
-	document.getElementById("tab_list").innerHTML = "";
-
 	let oldDomain = "";
 	let newDomain = "";
-	if (additionalFlag === "REPLACE_DOMAIN") {
+	if (options.extraAction === "REPLACE_DOMAIN") {
 		oldDomain = document.getElementById("old_domain").value;
 		newDomain = document.getElementById("new_domain").value;
 		if (!oldDomain || !newDomain) {
@@ -186,24 +186,28 @@ function queryTabs(keyword, useFilter = true, additionalFlag = "", callbackFn = 
 		}
 	}
 
-	const deleteTabs = additionalFlag === "DELETE_TABS" ? true : false;
-	chrome.runtime.sendMessage({ queryTabs: true, filter: filter, keyword: keyword, oldDomain: oldDomain, newDomain: newDomain, deleteTabs: deleteTabs }, (response) => {
-		if (chrome.runtime.lastError || response.error) {
+	const filter = document.getElementById("selection_filter").value;
+	const deleteTabs = options.extraAction === "DELETE_TABS" ? true : false;
+	const unloadTabs = options.extraAction === "UNLOAD_TABS" ? true : false;
+	const args = {
+		filter: options.useFilter ? filter : "",
+		keyword: options.useFilter ? keyword.toLowerCase().trim() : "",
+		oldDomain,
+		newDomain,
+		deleteTabs,
+		unloadTabs,
+	};
+	chrome.runtime.sendMessage({ queryTabs: true, args: args }, (response) => {
+		if (response.error) {
 			resetPopupView();
-			showMessage("Check the popup console for error details.", false);
-			console.log("Error:", chrome.runtime.lastError ?? response.error);
+			showMessage("Failed to query tabs!", false);
 			if (callbackFn) {
-				callbackFn({ error: chrome.runtime.lastError || response.error });
+				callbackFn({ error: response.error });
 			}
 
 			return;
-		} else if (deleteTabs) {
+		} else if (deleteTabs || unloadTabs) {
 			resetPopupView();
-			if (callbackFn) {
-				callbackFn({ error: null });
-			}
-
-			return;
 		}
 
 		const sortBy = document.getElementById("sort_by").value;
@@ -223,8 +227,8 @@ function queryTabs(keyword, useFilter = true, additionalFlag = "", callbackFn = 
 				return (b.groupTitle || "").localeCompare(a.groupTitle || "");
 			},
 		};
-		response.data.sort(compareData[sortBy]);
-		if (additionalFlag !== "DOWNLOAD_JSON") {
+		if (response.data) {
+			response.data.sort(compareData[sortBy]);
 			response.data.forEach((object) => {
 				const rowClone = document.getElementById("row_template").cloneNode(true);
 				rowClone.removeAttribute("id");
@@ -238,7 +242,7 @@ function queryTabs(keyword, useFilter = true, additionalFlag = "", callbackFn = 
 					const parentElement = this.closest("div[data-tabid]");
 					const tabId = parseInt(parentElement.getAttribute("data-tabid"), 10);
 					chrome.runtime.sendMessage({ closeTargetTab: true, tabId: tabId }, (response) => {
-						if (chrome.runtime.lastError || response.error) {
+						if (response.rejectedTabs.length > 0) {
 							showMessage("Failed to close tab!", false);
 						} else {
 							rowClone.remove();
@@ -247,7 +251,7 @@ function queryTabs(keyword, useFilter = true, additionalFlag = "", callbackFn = 
 						}
 					});
 				});
-				isImageURLValid(favIconUrl, (isValid) => {
+				isImageUrlValid(favIconUrl, (isValid) => {
 					if (isValid) {
 						tabIcon.classList.remove("default-url-icon");
 					}
@@ -268,17 +272,26 @@ function queryTabs(keyword, useFilter = true, additionalFlag = "", callbackFn = 
 					const parentElement = this.closest("div[data-tabid]");
 					const tabId = parseInt(parentElement.getAttribute("data-tabid"), 10);
 					chrome.runtime.sendMessage({ muteTab: true, tabId: tabId }, (response) => {
-						if (chrome.runtime.lastError || response.error) {
-							showMessage("Failed to mute/unmute tab!", false);
+						if (response.error) {
+							if (response.lastMuteState === true) {
+								showMessage("Failed to unmute tab!", false);
+							} else if (response.lastMuteState === false) {
+								showMessage("Failed to mute tab!", false);
+							} else {
+								showMessage("Failed to mute/unmute tab!", false);
+							}
 						} else {
 							const isMuted = response.isMuted;
+							volumeButton.title = isMuted ? "Unmute this tab" : "Mute this tab";
 							volumeIcon.src = isMuted ? "src/images/volume_muted.png" : "src/images/volume_unmuted.png";
 							showMessage(isMuted ? "Tab muted successfully!" : "Tab unmuted successfully!");
 						}
 					});
 				});
 				if (object.audible) {
-					volumeIcon.src = object.mutedInfo.muted ? "src/images/volume_muted.png" : "src/images/volume_unmuted.png";
+					const isMuted = object.mutedInfo.muted;
+					volumeButton.title = isMuted ? "Unmute this tab" : "Mute this tab";
+					volumeIcon.src = isMuted ? "src/images/volume_muted.png" : "src/images/volume_unmuted.png";
 					volumeButton.classList.remove("hidden");
 				}
 
@@ -287,13 +300,13 @@ function queryTabs(keyword, useFilter = true, additionalFlag = "", callbackFn = 
 					const parentElement = this.closest("div[data-tabid]");
 					const tabId = parseInt(parentElement.getAttribute("data-tabid"), 10);
 					chrome.runtime.sendMessage({ discardTab: true, tabId: tabId }, (response) => {
-						if (chrome.runtime.lastError || response.error) {
+						if (response.rejectedTabs.length > 0) {
 							showMessage("Failed to unload tab!", false);
 						} else {
 							if (filter == "<loaded>") {
 								rowClone.remove();
 							} else {
-								rowClone.setAttribute("data-tabid", response.tabId);
+								rowClone.setAttribute("data-tabid", response.resolvedTabs[0].tabId);
 								discardButton.classList.add("hidden");
 							}
 
@@ -312,8 +325,14 @@ function queryTabs(keyword, useFilter = true, additionalFlag = "", callbackFn = 
 					const parentElement = this.closest("div[data-tabid]");
 					const tabId = parseInt(parentElement.getAttribute("data-tabid"), 10);
 					chrome.runtime.sendMessage({ pinTab: true, tabId: tabId }, (response) => {
-						if (chrome.runtime.lastError || response.error) {
-							showMessage("Failed to pin/unpin tab!", false);
+						if (response.error) {
+							if (response.lastPinState === true) {
+								showMessage("Failed to unpin tab!", false);
+							} else if (response.lastPinState === false) {
+								showMessage("Failed to pin tab!", false);
+							} else {
+								showMessage("Failed to pin/unpin tab!", false);
+							}
 						} else {
 							const isPinned = response.isPinned;
 							pinButton.title = isPinned ? "Unpin this tab" : "Pin this tab";
@@ -324,8 +343,9 @@ function queryTabs(keyword, useFilter = true, additionalFlag = "", callbackFn = 
 					});
 				});
 				if (object.pinned) {
-					pinButton.title = "Unpin this tab";
-					pinIcon.src = object.pinned ? "src/images/pinned.png" : "src/images/unpinned.png";
+					const isPinned = object.pinned;
+					pinButton.title = isPinned ? "Unpin this tab" : "Pin this tab";
+					pinIcon.src = isPinned ? "src/images/pinned.png" : "src/images/unpinned.png";
 				}
 
 				const linkButton = rowClone.querySelector("button.btn-link");
@@ -333,7 +353,7 @@ function queryTabs(keyword, useFilter = true, additionalFlag = "", callbackFn = 
 					const parentElement = this.closest("div[data-tabid]");
 					const tabId = parseInt(parentElement.getAttribute("data-tabid"), 10);
 					chrome.runtime.sendMessage({ switchToTab: true, tabId: tabId }, (response) => {
-						if (chrome.runtime.lastError || response.error) {
+						if (response.error) {
 							showMessage("Failed to switch tab!", false);
 						} else {
 							showMessage("Tab switched successfully!");
@@ -356,8 +376,8 @@ function queryTabs(keyword, useFilter = true, additionalFlag = "", callbackFn = 
 				});
 				if (object.groupId !== -1) {
 					const groupTitle = rowClone.querySelector(".group-name");
-					groupTitle.textContent = groupTitle.title = object.groupTitle;
-					groupTitle.style.backgroundColor = GROUPING_COLOR_OPTIONS[object.groupColor];
+					groupTitle.textContent = groupTitle.title = object.groupInfo.title;
+					groupTitle.style.backgroundColor = GROUPING_COLOR_OPTIONS[object.groupInfo.color];
 					groupTitle.classList.remove("hidden");
 					groupTitle.addEventListener("click", function () {
 						navigator.clipboard.writeText(this.textContent);
@@ -378,7 +398,6 @@ function queryTabs(keyword, useFilter = true, additionalFlag = "", callbackFn = 
 			document.getElementById("footer").classList.add("hidden");
 			document.getElementById("download_notifier").classList.add("hidden");
 			document.getElementById("tab_query").classList.remove("hidden");
-			document.getElementById("tab_list").classList.remove("hidden");
 		}
 		if (callbackFn) {
 			callbackFn(response);
@@ -391,12 +410,17 @@ function resetOptions() {
 	document.getElementById("manage_tabs_all").checked = true;
 	document.getElementById("old_domain").value = "";
 	document.getElementById("new_domain").value = "";
+	document.getElementById("manage_tabs_buttons").inert = false;
+	document.getElementById("manage_tabs_options").inert = false;
+	document.getElementById("close_tabs_message").classList.add("hidden");
+	document.getElementById("close_tabs_actions").classList.add("hidden");
 }
 
 function resetPopupView() {
 	document.body.dataset.view = "tab_counter";
 	resetOptions();
 	fetchExtensionData(() => {
+		document.getElementById("loading_overlay").classList.add("hidden");
 		document.getElementById("modal_overlay").classList.add("hidden");
 		document.getElementById("modal_content").innerHTML = "";
 		document.getElementById("selection_filter").value = "";
@@ -408,7 +432,7 @@ function resetPopupView() {
 		document.getElementById("menu").classList.add("hidden");
 		document.getElementById("tab_query").classList.add("hidden");
 		document.getElementById("progress").classList.add("hidden");
-		document.getElementById("tab_list").classList.add("hidden");
+		document.getElementById("tab_list_container").classList.add("hidden");
 		document.getElementById("tab_list").innerHTML = "";
 		document.getElementById("tab_query").classList.remove("hidden");
 		document.getElementById("tab_counter").classList.remove("hidden");
@@ -503,7 +527,7 @@ document.addEventListener("DOMContentLoaded", () => {
 	document.getElementById("reset_peak_count").addEventListener("click", (event) => {
 		event.preventDefault();
 		chrome.runtime.sendMessage({ resetOpenedPeakTabCount: true }, (response) => {
-			if (!chrome.runtime.lastError && !response.error) {
+			if (!response.error) {
 				document.querySelector("#opened_peak_tabs > span[data-identifier='6']").textContent = response.openedPeakTabCount;
 			}
 		});
@@ -511,7 +535,7 @@ document.addEventListener("DOMContentLoaded", () => {
 	document.querySelectorAll("#color_options > button").forEach((button) => {
 		button.addEventListener("click", function () {
 			chrome.runtime.sendMessage({ setBadgeColor: true, badgeColor: this.dataset.badgeColor }, (response) => {
-				if (!chrome.runtime.lastError && !response.error) {
+				if (!response.error) {
 					markColorOptions(response.badgeColor);
 				}
 			});
@@ -519,7 +543,7 @@ document.addEventListener("DOMContentLoaded", () => {
 	});
 	document.getElementById("check_update").addEventListener("click", () => {
 		chrome.runtime.sendMessage({ checkUpdate: true }, (response) => {
-			if (!chrome.runtime.lastError && !response.error) {
+			if (!response.error) {
 				const notifier = document.getElementById("download_notifier");
 				notifier.dataset.updateAvailable = response.updateInfo.isNewerVersion;
 				if (response.updateInfo.isNewerVersion) {
@@ -534,16 +558,15 @@ document.addEventListener("DOMContentLoaded", () => {
 	});
 	document.getElementById("theme_toggle").addEventListener("click", () => {
 		chrome.runtime.sendMessage({ setColorTheme: true, colorTheme: document.body.dataset.theme === "dark" ? "light" : "dark" }, (response) => {
-			if (!chrome.runtime.lastError && !response.error) {
+			if (!response.error) {
 				changeColorTheme(response.colorTheme === "dark" ? "light" : "dark");
 			}
 		});
 	});
 	document.getElementById("silence_notification").addEventListener("change", function () {
 		chrome.runtime.sendMessage({ silenceNotification: true, flagValue: this.checked }, (response) => {
-			if (chrome.runtime.lastError || response.error) {
-				showMessage("Check the popup console for error details.", false);
-				console.log("Error:", chrome.runtime.lastError ?? response.error);
+			if (response.error) {
+				showMessage("Failed to silence notification!", false);
 			} else {
 				showMessage("Notification flag changed successfully!");
 			}
@@ -552,62 +575,81 @@ document.addEventListener("DOMContentLoaded", () => {
 	document.getElementById("replace_domain").addEventListener("click", () => {
 		const filter = document.getElementById("selection_filter");
 		const keyword = document.getElementById("filter_domain");
-		let useFilter = false;
-		if (document.getElementById("domain_edit_filtered").checked && (filter.value !== "" || keyword.value !== "")) {
-			useFilter = true;
-		}
-
-		queryTabs(keyword.value, useFilter, "REPLACE_DOMAIN", (response) => {
+		const options = {
+			useFilter: document.getElementById("domain_edit_filtered").checked && (filter.value !== "" || keyword.value !== "") ? true : false,
+			extraAction: "REPLACE_DOMAIN",
+		};
+		queryTabs(keyword.value, options, (response) => {
+			resetPopupView();
 			if (response.error) {
-				showMessage("Failed to edit domain!", false);
+				showMessage("Failed to edit domains of listed tabs!", false);
 			} else {
-				keyword.value = document.getElementById("new_domain").value;
-				if (!useFilter) {
-					document.getElementById("selection_filter").value = "<all>";
-				}
-
-				showMessage("Domain edited successfully!");
+				const resolvedTabCount = response.resolvedTabs.length;
+				const rejectedTabCount = response.rejectedTabs.length;
+				showMessage(`${resolvedTabCount} tab${resolvedTabCount > 1 ? "s" : ""} affected${rejectedTabCount > 0 ? `, ${rejectedTabCount} unchanged` : ""}!`);
 			}
-
-			resetOptions();
 		});
 	});
 	document.getElementById("close_listed_tabs").addEventListener("click", () => {
-		const popupContent = `
-			<div class="flex flex-col gap-y-8 text-center text-xl">
-				<span>Are you sure you want to close all listed tabs, except for the currently active tab?</span>
-				<div class="flex items-center gap-x-3">
-					<button id="keep_list" class="flex-1 px-2 py-1 bg-(--c3) text-(--s2) adaptive-border rounded-md select-none cursor-pointer">No</button>
-					<button id="remove_all" class="flex-1 px-2 py-1 bg-(--c5) text-(--s2) adaptive-border rounded-md select-none cursor-pointer">Yes</button>
-				</div>
-			</div>
-		`;
-		document.getElementById("wrapper").inert = true;
-		document.getElementById("modal_content").innerHTML = popupContent;
-		document.getElementById("modal_overlay").classList.remove("hidden");
+		document.getElementById("manage_tabs_options").inert = true;
+		document.getElementById("manage_tabs_buttons").inert = true;
+		document.getElementById("close_tabs_message").classList.remove("hidden");
+		document.getElementById("close_tabs_actions").classList.remove("hidden");
 
-		const buttonAccept = document.getElementById("remove_all");
+		const buttonAccept = document.getElementById("close_all");
 		buttonAccept.addEventListener("click", () => {
+			const filter = document.getElementById("selection_filter");
 			const keyword = document.getElementById("filter_domain");
-			queryTabs(keyword.value, true, "DELETE_TABS", (response) => {
-				document.getElementById("close_modal").click();
+			const options = {
+				useFilter: document.getElementById("manage_tabs_filtered").checked && (filter.value !== "" || keyword.value !== "") ? true : false,
+				extraAction: "DELETE_TABS",
+			};
+			queryTabs(keyword.value, options, (response) => {
+				resetPopupView();
 				if (response.error) {
 					showMessage("Failed to close listed tabs!", false);
 				} else {
-					resetPopupView();
-					showMessage("Listed tabs closed successfully!");
+					const closedTabCount = response.resolvedTabs.length;
+					const failedTabCount = response.rejectedTabs.length;
+					showMessage(`${closedTabCount} tab${closedTabCount > 1 ? "s" : ""} closed${failedTabCount > 0 ? `, ${failedTabCount} failed` : ""}!`);
 				}
 			});
 		});
 
 		const buttonReject = document.getElementById("keep_list");
 		buttonReject.addEventListener("click", () => {
-			document.getElementById("close_modal").click();
+			document.getElementById("manage_tabs_options").inert = false;
+			document.getElementById("manage_tabs_buttons").inert = false;
+			document.getElementById("close_tabs_message").classList.add("hidden");
+			document.getElementById("close_tabs_actions").classList.add("hidden");
+		});
+	});
+	document.getElementById("unload_listed_tabs").addEventListener("click", () => {
+		const filter = document.getElementById("selection_filter");
+		const keyword = document.getElementById("filter_domain");
+		const options = {
+			useFilter: document.getElementById("manage_tabs_filtered").checked && (filter.value !== "" || keyword.value !== "") ? true : false,
+			extraAction: "UNLOAD_TABS",
+		};
+		queryTabs(keyword.value, options, (response) => {
+			resetPopupView();
+			if (response.error) {
+				showMessage("Failed to unload listed tabs!", false);
+			} else {
+				const closedTabCount = response.resolvedTabs.length;
+				const failedTabCount = response.rejectedTabs.length;
+				showMessage(`${closedTabCount} tab${closedTabCount > 1 ? "s" : ""} unloaded${failedTabCount > 0 ? `, ${failedTabCount} failed` : ""}!`);
+			}
 		});
 	});
 	document.getElementById("download_to_json").addEventListener("click", () => {
+		const filter = document.getElementById("selection_filter");
 		const keyword = document.getElementById("filter_domain");
-		queryTabs(keyword.value, true, "DOWNLOAD_JSON", (response) => {
+		const options = {
+			useFilter: document.getElementById("manage_tabs_filtered").checked && (filter.value !== "" || keyword.value !== "") ? true : false,
+			extraAction: "DOWNLOAD_JSON",
+		};
+		queryTabs(keyword.value, options, (response) => {
 			if (response.error) {
 				showMessage("Failed to download JSON data!", false);
 			} else {
@@ -648,7 +690,7 @@ document.addEventListener("DOMContentLoaded", () => {
 				}
 
 				chrome.runtime.sendMessage({ restoreTabs: true, data: urls }, (response) => {
-					if (chrome.runtime.lastError || response.error) {
+					if (response.error) {
 						showMessage("Failed to restore tabs!", false);
 					} else {
 						showMessage("Tabs restored successfully!");

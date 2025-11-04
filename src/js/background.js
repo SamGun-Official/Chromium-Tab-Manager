@@ -34,7 +34,7 @@ function getAllDataFromStorage(callbackFn) {
 				colorTheme: data.colorTheme ?? "dark",
 				silenceNotification: data.silenceNotification ?? false,
 				lastNotifiedVersion: data.lastNotifiedVersion ?? "1.0.0",
-				lastDownloadURL: data.lastDownloadURL ?? null,
+				lastDownloadUrl: data.lastDownloadUrl ?? null,
 				isNewerVersion: data.isNewerVersion ?? false,
 			});
 		}
@@ -143,56 +143,7 @@ async function checkForUpdates(callbackFn = undefined) {
 		const fetchedData = await response.json();
 		const manifestData = chrome.runtime.getManifest();
 		getAllDataFromStorage((data) => {
-			if (data.error) {
-				if (callbackFn) {
-					callbackFn({ error: data.error });
-				}
-
-				return;
-			}
-			if (data.lastDownloadURL === null || data.lastNotifiedVersion === "1.0.0") {
-				data.lastDownloadURL = fetchedData.download_url;
-				data.lastNotifiedVersion = fetchedData.version;
-			}
-			if (!isNewerVersion(fetchedData.version, manifestData.version)) {
-				data.isNewerVersion = false;
-				setAllDataToStorage(data, (update) => {
-					if (update.error) {
-						if (callbackFn) {
-							callbackFn({ error: update.error });
-						}
-
-						return;
-					}
-					if (callbackFn) {
-						callbackFn({ versionData: fetchedData, isNewerVersion: update.isNewerVersion });
-					}
-				});
-
-				return;
-			}
-			if (!isNewerVersion(fetchedData.version, data.lastNotifiedVersion)) {
-				data.isNewerVersion = true;
-				setAllDataToStorage(data, (update) => {
-					if (update.error) {
-						if (callbackFn) {
-							callbackFn({ error: update.error });
-						}
-
-						return;
-					}
-					if (callbackFn) {
-						callbackFn({ versionData: fetchedData, isNewerVersion: update.isNewerVersion });
-					}
-				});
-
-				return;
-			}
-
-			data.lastDownloadURL = fetchedData.download_url;
-			data.lastNotifiedVersion = fetchedData.version;
-			data.isNewerVersion = true;
-			setAllDataToStorage(data, (update) => {
+			function updateDataCallback(update, createNotification = false) {
 				if (update.error) {
 					if (callbackFn) {
 						callbackFn({ error: update.error });
@@ -200,7 +151,7 @@ async function checkForUpdates(callbackFn = undefined) {
 
 					return;
 				}
-				if (!update.silenceNotification && fetchedData.severity === "critical") {
+				if (createNotification && !update.silenceNotification && fetchedData.severity === "critical") {
 					const options = {
 						title: manifestData.name,
 						message: `A new critical update v${fetchedData.version} is available! Click here to download from the source.`,
@@ -210,8 +161,42 @@ async function checkForUpdates(callbackFn = undefined) {
 					chrome.notifications.create("update", options);
 				}
 				if (callbackFn) {
-					callbackFn({ versionData: fetchedData, isNewerVersion: update.isNewerVersion });
+					callbackFn({
+						versionData: fetchedData,
+						isNewerVersion: update.isNewerVersion,
+					});
 				}
+			}
+
+			if (data.error) {
+				if (callbackFn) {
+					callbackFn({ error: data.error });
+				}
+
+				return;
+			}
+			if (data.lastDownloadUrl === null || data.lastNotifiedVersion === "1.0.0") {
+				data.lastDownloadUrl = fetchedData.download_url;
+				data.lastNotifiedVersion = fetchedData.version;
+			}
+			if (!isNewerVersion(fetchedData.version, manifestData.version)) {
+				data.isNewerVersion = false;
+				setAllDataToStorage(data, updateDataCallback);
+
+				return;
+			}
+			if (!isNewerVersion(fetchedData.version, data.lastNotifiedVersion)) {
+				data.isNewerVersion = true;
+				setAllDataToStorage(data, updateDataCallback);
+
+				return;
+			}
+
+			data.lastDownloadUrl = fetchedData.download_url;
+			data.lastNotifiedVersion = fetchedData.version;
+			data.isNewerVersion = true;
+			setAllDataToStorage(data, (update) => {
+				updateDataCallback(update, true);
 			});
 		});
 	} catch (error) {
@@ -331,6 +316,42 @@ function fetchExtensionData(callbackFn) {
 	});
 }
 
+function removeTabsFromMemory(tabIds, deleteTabs, callbackFn) {
+	const promises = tabIds.map((tabId) => {
+		return new Promise((resolve, reject) => {
+			if (deleteTabs) {
+				chrome.tabs.remove(tabId, () => {
+					if (chrome.runtime.lastError) {
+						reject({
+							error: chrome.runtime.lastError,
+							tabId: tabId,
+						});
+					} else {
+						resolve({ tabId: tabId });
+					}
+				});
+			} else {
+				chrome.tabs.discard(tabId, (tab) => {
+					if (chrome.runtime.lastError) {
+						reject({
+							error: chrome.runtime.lastError,
+							tabId: tabId,
+						});
+					} else {
+						resolve({ tabId: tab.id });
+					}
+				});
+			}
+		});
+	});
+	Promise.allSettled(promises).then((results) => {
+		callbackFn({
+			resolvedTabs: results.filter((result) => result.status === "fulfilled").map((result) => result.value),
+			rejectedTabs: results.filter((result) => result.status === "rejected").map((result) => result.reason),
+		});
+	});
+}
+
 chrome.alarms.create("update-check", { periodInMinutes: 1440 });
 chrome.alarms.onAlarm.addListener(() => checkForUpdates());
 chrome.runtime.onInstalled.addListener(() => {
@@ -349,13 +370,9 @@ chrome.runtime.onMessage.addListener((message, _, sendResponse) => {
 		});
 	}
 	if (message.queryTabs) {
-		const filter = message.filter;
-		const keyword = message.keyword;
-		const oldDomain = message.oldDomain;
-		const newDomain = message.newDomain;
-		const deleteTabs = message.deleteTabs;
+		const { filter, keyword, oldDomain, newDomain, deleteTabs, unloadTabs } = message.args;
 		const options = {
-			active: deleteTabs ? false : undefined,
+			active: deleteTabs || unloadTabs ? false : undefined,
 			audible: filter === "<audible>" ? true : undefined,
 			lastFocusedWindow: deleteTabs ? true : undefined,
 			status: filter === "<loaded>" ? "complete" : undefined,
@@ -373,26 +390,22 @@ chrome.runtime.onMessage.addListener((message, _, sendResponse) => {
 					return matched;
 				});
 				const groupIds = [...new Set(filteredTabs.map((tab) => tab.groupId).filter((groupId) => groupId !== -1))];
-				const groupData = {};
 				const promises = groupIds.map((groupId) => {
 					return new Promise((resolve, reject) => {
 						chrome.tabGroups.get(groupId, (group) => {
 							if (chrome.runtime.lastError) {
-								reject();
+								reject(chrome.runtime.lastError);
 							} else {
-								groupData[groupId] = {
-									groupTitle: group.title,
-									groupColor: group.color,
-								};
-								resolve();
+								resolve(group);
 							}
 						});
 					});
 				});
-				Promise.allSettled(promises).then(() => {
+				Promise.allSettled(promises).then((results) => {
+					const groupData = Object.fromEntries(results.filter((result) => result.status === "fulfilled").map((result) => [result.value.id, { ...result.value }]));
 					filteredTabs = filteredTabs.map((tab) => {
 						if (tab.groupId !== -1 && groupData[tab.groupId]) {
-							return { ...tab, ...groupData[tab.groupId] };
+							return { ...tab, groupInfo: groupData[tab.groupId] };
 						}
 
 						return tab;
@@ -416,21 +429,15 @@ chrome.runtime.onMessage.addListener((message, _, sendResponse) => {
 							return null;
 						});
 						Promise.allSettled(updatePromises.filter(Boolean)).then((results) => {
-							const updatedValues = results.filter((result) => result.status === "fulfilled").map((result) => result.value);
-							if (updatedValues.length === 0) {
-								sendResponse({ error: "Failed to edit domain!" });
-							} else {
-								sendResponse({ data: updatedValues });
-							}
+							sendResponse({
+								resolvedTabs: results.filter((result) => result.status === "fulfilled").map((result) => result.value),
+								rejectedTabs: results.filter((result) => result.status === "rejected").map((result) => result.reason),
+							});
 						});
-					} else if (deleteTabs) {
+					} else if (deleteTabs || unloadTabs) {
 						const tabIds = filteredTabs.map((tab) => tab.id);
-						chrome.tabs.remove(tabIds, () => {
-							if (chrome.runtime.lastError) {
-								sendResponse({ error: chrome.runtime.lastError });
-							} else {
-								sendResponse({ data: [] });
-							}
+						removeTabsFromMemory(tabIds, deleteTabs, (response) => {
+							sendResponse(response);
 						});
 					} else {
 						sendResponse({ data: filteredTabs });
@@ -463,22 +470,9 @@ chrome.runtime.onMessage.addListener((message, _, sendResponse) => {
 			});
 		});
 	}
-	if (message.closeTargetTab) {
-		chrome.tabs.remove(message.tabId, () => {
-			if (chrome.runtime.lastError) {
-				sendResponse({ error: chrome.runtime.lastError });
-			} else {
-				sendResponse({ error: null });
-			}
-		});
-	}
-	if (message.discardTab) {
-		chrome.tabs.discard(message.tabId, (tab) => {
-			if (chrome.runtime.lastError) {
-				sendResponse({ error: chrome.runtime.lastError });
-			} else {
-				sendResponse({ tabId: tab.id });
-			}
+	if (message.closeTargetTab || message.discardTab) {
+		removeTabsFromMemory([message.tabId], message.closeTargetTab ? true : false, (response) => {
+			sendResponse(response);
 		});
 	}
 	if (message.switchToTab) {
@@ -501,11 +495,11 @@ chrome.runtime.onMessage.addListener((message, _, sendResponse) => {
 			if (chrome.runtime.lastError) {
 				sendResponse({ error: chrome.runtime.lastError });
 			} else {
-				chrome.tabs.update(tab.id, { muted: message.muteTab ? !tab.mutedInfo.muted : false, pinned: message.pinTab ? !tab.pinned : false }, (tab) => {
+				chrome.tabs.update(tab.id, { muted: message.muteTab ? !tab.mutedInfo.muted : false, pinned: message.pinTab ? !tab.pinned : false }, (update) => {
 					if (chrome.runtime.lastError) {
-						sendResponse({ error: chrome.runtime.lastError });
+						sendResponse({ error: chrome.runtime.lastError, lastMuteState: tab.mutedInfo.muted, lastPinState: tab.pinned });
 					} else {
-						sendResponse({ tabId: tab.id, isMuted: tab.muted, isPinned: tab.pinned });
+						sendResponse({ tabId: update.id, isMuted: update.mutedInfo.muted, isPinned: update.pinned });
 					}
 				});
 			}
@@ -570,8 +564,8 @@ chrome.tabs.onCreated.addListener(() => {
 chrome.tabs.onRemoved.addListener(() => updateBadgeText());
 chrome.notifications.onClicked.addListener(() => {
 	getAllDataFromStorage((data) => {
-		if (data.lastDownloadURL) {
-			chrome.tabs.create({ url: latestDownloadURL });
+		if (data.lastDownloadUrl) {
+			chrome.tabs.create({ url: data.lastDownloadUrl });
 		}
 	});
 });
