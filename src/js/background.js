@@ -527,21 +527,29 @@ chrome.runtime.onMessage.addListener((message, _, sendResponse) => {
 	}
 	if (message.setBadgeColor) {
 		getAllDataFromStorage((data) => {
-			data.badgeColor = message.badgeColor;
-			setAllDataToStorage(data, (update) => {
-				sendResponse(update);
-				if (!update.error) {
-					updateBadgeColor();
-				}
-			});
+			if (data.error) {
+				sendResponse(data);
+			} else {
+				data.badgeColor = message.badgeColor;
+				setAllDataToStorage(data, (update) => {
+					sendResponse(update);
+					if (!update.error) {
+						updateBadgeColor();
+					}
+				});
+			}
 		});
 	}
 	if (message.setColorTheme) {
 		getAllDataFromStorage((data) => {
-			data.colorTheme = message.colorTheme;
-			setAllDataToStorage(data, (update) => {
-				sendResponse(update);
-			});
+			if (data.error) {
+				sendResponse(data);
+			} else {
+				data.colorTheme = message.colorTheme;
+				setAllDataToStorage(data, (update) => {
+					sendResponse(update);
+				});
+			}
 		});
 	}
 	if (message.closeTargetTab || message.discardTab) {

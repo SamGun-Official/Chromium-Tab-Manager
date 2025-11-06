@@ -164,6 +164,7 @@ function isImageUrlValid(url, callback) {
 }
 
 function queryTabs(keyword, options = { useFilter: true, extraAction: undefined }, callbackFn = undefined) {
+	document.getElementById("wrapper").inert = true;
 	document.getElementById("tab_list_container").classList.add("hidden");
 	document.getElementById("tab_counter").classList.add("hidden");
 	document.getElementById("tab_list").innerHTML = "";
@@ -198,6 +199,7 @@ function queryTabs(keyword, options = { useFilter: true, extraAction: undefined 
 		unloadTabs,
 	};
 	chrome.runtime.sendMessage({ queryTabs: true, args: args }, (response) => {
+		document.getElementById("wrapper").inert = false;
 		if (response.error) {
 			resetPopupView();
 			showMessage("Failed to query tabs!", false);
@@ -418,6 +420,7 @@ function resetOptions() {
 
 function resetPopupView() {
 	document.body.dataset.view = "tab_counter";
+	document.getElementById("wrapper").inert = false;
 	resetOptions();
 	fetchExtensionData(() => {
 		document.getElementById("loading_overlay").classList.add("hidden");
@@ -582,10 +585,8 @@ document.addEventListener("DOMContentLoaded", () => {
 			extraAction: "REPLACE_DOMAIN",
 		};
 		this.textContent = "Loading...";
-		document.getElementById("wrapper").inert = true;
 		queryTabs(keyword.value, options, (response) => {
 			this.textContent = "Edit";
-			document.getElementById("wrapper").inert = false;
 			resetPopupView();
 			if (response.error) {
 				showMessage("Failed to edit domains of listed tabs!", false);
@@ -611,10 +612,8 @@ document.addEventListener("DOMContentLoaded", () => {
 				extraAction: "DELETE_TABS",
 			};
 			this.textContent = "Loading...";
-			document.getElementById("wrapper").inert = true;
 			queryTabs(keyword.value, options, (response) => {
 				this.textContent = "Close Tabs";
-				document.getElementById("wrapper").inert = false;
 				resetPopupView();
 				if (response.error) {
 					showMessage("Failed to close listed tabs!", false);
@@ -642,10 +641,8 @@ document.addEventListener("DOMContentLoaded", () => {
 			extraAction: "UNLOAD_TABS",
 		};
 		this.textContent = "Loading...";
-		document.getElementById("wrapper").inert = true;
 		queryTabs(keyword.value, options, (response) => {
 			this.textContent = "Unload Tabs";
-			document.getElementById("wrapper").inert = false;
 			resetPopupView();
 			if (response.error) {
 				showMessage("Failed to unload listed tabs!", false);
@@ -704,12 +701,10 @@ document.addEventListener("DOMContentLoaded", () => {
 				}
 
 				this.textContent = "Loading...";
-				document.getElementById("wrapper").inert = true;
 				chrome.runtime.sendMessage({ restoreTabs: true, data: urls }, (response) => {
 					const resolvedTabCount = response.resolvedTabs.length;
 					const rejectedTabCount = response.rejectedTabs.length;
 					this.textContent = "Load JSON";
-					document.getElementById("wrapper").inert = false;
 					resetPopupView();
 					showMessage(`${resolvedTabCount} tab${resolvedTabCount > 1 ? "s" : ""} restored${rejectedTabCount > 0 ? `, ${rejectedTabCount} failed` : ""}!`);
 				});
